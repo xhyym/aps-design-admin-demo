@@ -1,0 +1,22 @@
+{
+  "code": 0,
+  "message": "获取工作台数据成功（Mock）",
+  "data": {
+    "greeting": "下午好，林知远。",
+    "summaries": [
+      { "label": "活跃成员", "value": "86", "detail": "当前工作区已启用账户", "trend": "up" },
+      { "label": "待处理权限", "value": "4", "detail": "需要管理员确认的申请", "trend": "attention" },
+      { "label": "本周变更", "value": "12", "detail": "菜单、角色与成员配置", "trend": "flat" }
+    ],
+    "activities": [
+      { "id": "activity-1", "title": "发布了角色权限调整", "description": "运营主管角色新增内容查看权限", "time": "10:42", "type": "release" },
+      { "id": "activity-2", "title": "完成了新成员审核", "description": "产品工作区新增 3 位协作者", "time": "09:18", "type": "member" },
+      { "id": "activity-3", "title": "更新了安全策略", "description": "会话有效期已同步至当前环境", "time": "昨天", "type": "setting" }
+    ],
+    "todos": [
+      { "id": "todo-1", "title": "复核 2 项菜单权限变更", "description": "来自业务管理组的本周申请", "action": "前往菜单配置", "level": "attention" },
+      { "id": "todo-2", "title": "完成新角色的授权范围确认", "description": "角色“内容审核员”尚未发布", "action": "查看角色权限", "level": "normal" }
+    ]
+  },
+  "timestamp": 1764556800000
+}

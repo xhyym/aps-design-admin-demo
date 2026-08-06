@@ -1,0 +1,16 @@
+{
+  "code": 0,
+  "message": "获取菜单列表成功（Mock）",
+  "data": {
+    "list": [
+      { "id": "menu-001", "name": "工作台", "path": "/dashboard", "permission": "dashboard:view", "status": "enabled", "sortOrder": 1, "updatedAt": "今天 10:42" },
+      { "id": "menu-002", "name": "用户管理", "path": "/system/users", "permission": "system:user:read", "status": "enabled", "sortOrder": 10, "updatedAt": "昨天 16:30" },
+      { "id": "menu-003", "name": "角色权限", "path": "/system/roles", "permission": "system:role:read", "status": "enabled", "sortOrder": 20, "updatedAt": "昨天 16:30" },
+      { "id": "menu-004", "name": "菜单配置", "path": "/system/menus", "permission": "system:menu:read", "status": "enabled", "sortOrder": 30, "updatedAt": "7 月 29 日" }
+    ],
+    "total": 4,
+    "page": 1,
+    "pageSize": 10
+  },
+  "timestamp": 1764556800000
+}

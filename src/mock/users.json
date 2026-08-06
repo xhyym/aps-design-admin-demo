@@ -1,0 +1,17 @@
+{
+  "code": 0,
+  "message": "获取用户列表成功（Mock）",
+  "data": {
+    "list": [
+      { "id": "user-001", "name": "林知远", "account": "lin.zhiyuan", "department": "产品与体验", "role": "系统管理员", "status": "active", "lastActiveAt": "今天 10:42" },
+      { "id": "user-002", "name": "周予安", "account": "zhou.yuan", "department": "运营管理", "role": "运营主管", "status": "active", "lastActiveAt": "今天 09:18" },
+      { "id": "user-003", "name": "顾闻川", "account": "gu.wenchuan", "department": "内容服务", "role": "内容审核员", "status": "pending", "lastActiveAt": "昨天 16:20" },
+      { "id": "user-004", "name": "宋南枝", "account": "song.nanzhi", "department": "客户成功", "role": "成员", "status": "active", "lastActiveAt": "昨天 14:06" },
+      { "id": "user-005", "name": "陆知行", "account": "lu.zhixing", "department": "数据分析", "role": "数据观察员", "status": "disabled", "lastActiveAt": "7 月 29 日" }
+    ],
+    "total": 5,
+    "page": 1,
+    "pageSize": 10
+  },
+  "timestamp": 1764556800000
+}

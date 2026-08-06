@@ -1,0 +1,106 @@
+{
+  "code": 0,
+  "message": "登录成功",
+  "data": {
+    "accessToken": "mock-access-token-aps-design-pro",
+    "profile": {
+      "id": "user-001",
+      "tenantId": "workspace-demo",
+      "name": "林知远",
+      "title": "系统管理员",
+      "initials": "林",
+      "roles": ["super-admin"],
+      "permissions": [
+        { "code": "dashboard:view", "label": "查看工作台" },
+        { "code": "system:user:read", "label": "查看用户" },
+        { "code": "system:user:write", "label": "编辑用户" },
+        { "code": "system:role:read", "label": "查看角色" },
+        { "code": "system:menu:read", "label": "查看菜单" },
+        { "code": "business:order:read", "label": "查看订单" },
+        { "code": "business:product:read", "label": "查看商品" },
+        { "code": "business:refund:read", "label": "查看售后" },
+        { "code": "business:member:read", "label": "查看会员" },
+        { "code": "business:marketing:read", "label": "查看营销活动" },
+        { "code": "business:inventory:read", "label": "查看库存" },
+        { "code": "business:analytics:read", "label": "查看经营分析" }
+      ],
+      "navigation": [
+        {
+          "key": "dashboard", "label": "经营总览", "path": "/dashboard", "icon": "grid", "permission": "dashboard:view",
+          "children": [
+            { "key": "dashboard-overview", "label": "经营总览", "path": "/dashboard", "icon": "grid", "permission": "dashboard:view" },
+            { "key": "dashboard-tasks", "label": "运营待办", "path": "/dashboard/tasks", "icon": "bell", "permission": "dashboard:view" }
+          ]
+        },
+        {
+          "key": "products", "label": "商品中心", "path": "/products/catalog", "icon": "grid", "permission": "business:product:read",
+          "children": [
+            { "key": "product-catalog", "label": "商品与 SKU", "path": "/products/catalog", "icon": "grid", "permission": "business:product:read" },
+            { "key": "product-categories", "label": "分类与品牌", "path": "/products/categories", "icon": "menu", "permission": "business:product:read" },
+            { "key": "product-attributes", "label": "规格模板", "path": "/products/attributes", "icon": "edit", "permission": "business:product:read" }
+          ]
+        },
+        {
+          "key": "trade", "label": "交易中心", "path": "/trade/orders", "icon": "chart", "permission": "business:order:read",
+          "children": [
+            { "key": "orders", "label": "交易订单", "path": "/trade/orders", "icon": "chart", "permission": "business:order:read" },
+            { "key": "order-export", "label": "导出任务", "path": "/trade/export-tasks", "icon": "download", "permission": "business:order:read" }
+          ]
+        },
+        {
+          "key": "after-sales", "label": "退款与售后", "path": "/after-sales/refunds", "icon": "refresh", "permission": "business:refund:read",
+          "children": [
+            { "key": "refunds", "label": "退款审核", "path": "/after-sales/refunds", "icon": "refresh", "permission": "business:refund:read" },
+            { "key": "after-sales-tickets", "label": "售后工单", "path": "/after-sales/tickets", "icon": "bell", "permission": "business:refund:read" }
+          ]
+        },
+        {
+          "key": "members", "label": "会员中心", "path": "/members/list", "icon": "users", "permission": "business:member:read",
+          "children": [
+            { "key": "members", "label": "会员列表", "path": "/members/list", "icon": "users", "permission": "business:member:read" },
+            { "key": "member-segments", "label": "会员分群", "path": "/members/segments", "icon": "filter", "permission": "business:member:read" }
+          ]
+        },
+        {
+          "key": "marketing", "label": "营销中心", "path": "/marketing/campaigns", "icon": "bell", "permission": "business:marketing:read",
+          "children": [
+            { "key": "marketing-campaigns", "label": "营销活动", "path": "/marketing/campaigns", "icon": "bell", "permission": "business:marketing:read" },
+            { "key": "marketing-coupons", "label": "优惠券中心", "path": "/marketing/coupons", "icon": "check", "permission": "business:marketing:read" }
+          ]
+        },
+        {
+          "key": "inventory", "label": "库存与履约", "path": "/inventory/overview", "icon": "panel", "permission": "business:inventory:read",
+          "children": [
+            { "key": "inventory", "label": "库存概览", "path": "/inventory/overview", "icon": "panel", "permission": "business:inventory:read" },
+            { "key": "inventory-warehouses", "label": "仓库管理", "path": "/inventory/warehouses", "icon": "panel", "permission": "business:inventory:read" }
+          ]
+        },
+        {
+          "key": "analytics", "label": "数据分析", "path": "/analytics/overview", "icon": "chart", "permission": "business:analytics:read",
+          "children": [
+            { "key": "analytics", "label": "经营分析", "path": "/analytics/overview", "icon": "chart", "permission": "business:analytics:read" },
+            { "key": "analytics-products", "label": "商品分析", "path": "/analytics/products", "icon": "chart", "permission": "business:analytics:read" }
+          ]
+        },
+        {
+          "key": "system", "label": "系统设置", "path": "/system/users", "icon": "settings", "permission": "system:user:read",
+          "children": [
+            { "key": "users", "label": "用户管理", "path": "/system/users", "icon": "users", "permission": "system:user:read" },
+            { "key": "roles", "label": "角色权限", "path": "/system/roles", "icon": "shield", "permission": "system:role:read" },
+            { "key": "menus", "label": "菜单配置", "path": "/system/menus", "icon": "menu", "permission": "system:menu:read" }
+          ]
+        },
+        {
+          "key": "examples", "label": "组件实验室", "path": "/examples/components", "icon": "panel", "permission": "dashboard:view",
+          "children": [
+            { "key": "components", "label": "组件能力预览", "path": "/examples/components", "icon": "panel", "permission": "dashboard:view" },
+            { "key": "component-forms", "label": "表单与日期", "path": "/examples/forms", "icon": "filter", "permission": "dashboard:view" },
+            { "key": "component-tables", "label": "表格与图表", "path": "/examples/advanced-table", "icon": "columns", "permission": "dashboard:view" },
+            { "key": "component-feedback", "label": "反馈与流程", "path": "/examples/feedback", "icon": "bell", "permission": "dashboard:view" }
+          ]
+        }
+      ]
+    }
+  },
+  "timestamp": 1764556800000
+}

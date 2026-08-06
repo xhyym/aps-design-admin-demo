@@ -1,0 +1,15 @@
+{
+  "code": 0,
+  "message": "获取角色列表成功（Mock）",
+  "data": {
+    "list": [
+      { "id": "role-001", "name": "系统管理员", "code": "super-admin", "description": "管理工作区基础设置、成员、角色与菜单。", "memberCount": 2, "permissions": ["全部权限"], "updatedAt": "今天 10:42" },
+      { "id": "role-002", "name": "运营主管", "code": "operation-lead", "description": "管理运营内容与指定工作区成员。", "memberCount": 8, "permissions": ["运营配置", "成员查看"], "updatedAt": "昨天 16:30" },
+      { "id": "role-003", "name": "内容审核员", "code": "content-reviewer", "description": "查看内容任务并完成审核结果登记。", "memberCount": 14, "permissions": ["内容查看", "审核处理"], "updatedAt": "7 月 29 日" }
+    ],
+    "total": 3,
+    "page": 1,
+    "pageSize": 10
+  },
+  "timestamp": 1764556800000
+}
