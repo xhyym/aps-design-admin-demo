@@ -10,6 +10,9 @@ import { AppFormField } from "aps-design-pro";
 import { AppSearchInput } from "aps-design-pro";
 import { AppSelect } from "aps-design-pro";
 import { AppCard } from "aps-design-pro";
+import { AppIconButton } from "aps-design-pro";
+import { AppTableActions } from "aps-design-pro";
+import { AppTableOperationBar } from "aps-design-pro";
 import type { DataTableColumn, SelectOption, StatusTone } from "aps-design-pro";
 
 export type CommerceScenarioKey =
@@ -155,13 +158,13 @@ function handleAction(row: CommerceScenarioRow): void { console.info(`[商城演
     <AppCard as="section" padding="none" fill-height class="data-table-card" :aria-label="`${scenario.primaryLabel}列表`">
       <AppTableToolbar>
         <AppButton leading-icon="plus">{{ scenario.actionLabel }}</AppButton>
-        <template #actions><AppButton variant="secondary" size="small" leading-icon="download">导出当前结果</AppButton><AppButton variant="secondary" size="small" leading-icon="refresh">刷新</AppButton></template>
+        <template #actions><AppTableOperationBar show-refresh @refresh="submitFilters"><template #before><AppIconButton icon="download" label="导出当前结果" /></template></AppTableOperationBar></template>
       </AppTableToolbar>
-      <AppDataTable :rows="visibleRows" :columns="columns" row-key="id" fill-height :loading="isLoading" :action-label="scenario.actionLabel" :empty-title="scenario.emptyTitle" empty-description="调整关键词或状态后再试一次。" aria-label="商城业务数据表格">
+      <AppDataTable :rows="visibleRows" :columns="columns" row-key="id" fill-height :loading="isLoading" action-label="操作" :empty-title="scenario.emptyTitle" empty-description="调整关键词或状态后再试一次。" aria-label="商城业务数据表格">
         <template #cell-primary="{ row }"><div class="scenario-primary"><strong>{{ row.primary }}</strong><small>{{ row.secondary }}</small></div></template>
         <template #cell-secondary="{ row }"><span class="scenario-secondary">{{ row.secondary }}</span></template>
         <template #cell-status="{ row }"><AppStatusTag :label="row.status" :tone="getStatusTone(row.status)" /></template>
-        <template #actions="{ row }"><AppButton variant="text" size="small" @click="handleAction(row)">{{ scenario.actionLabel }}</AppButton></template>
+        <template #actions="{ row }"><AppTableActions><AppIconButton icon="edit" :label="scenario.actionLabel" size="small" @click="handleAction(row)" /></AppTableActions></template>
       </AppDataTable>
       <AppPagination v-if="filteredRows.length" :page="page" :page-size="pageSize" :total="filteredRows.length" :page-size-options="[10, 20, 30, 50]" @update:page="updatePage" @update:page-size="updatePageSize" />
     </AppCard>

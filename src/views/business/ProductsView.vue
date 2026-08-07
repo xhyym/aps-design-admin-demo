@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue";
 import { AppButton } from "aps-design-pro";
 import { AppIcon } from "aps-design-pro";
+import { AppIconButton } from "aps-design-pro";
 import { AppCard } from "aps-design-pro";
 import { AppDataTable } from "aps-design-pro";
 import { AppFormField } from "aps-design-pro";
@@ -11,6 +12,8 @@ import { AppSearchInput } from "aps-design-pro";
 import { AppSelect } from "aps-design-pro";
 import { AppStatusTag } from "aps-design-pro";
 import { AppTableToolbar } from "aps-design-pro";
+import { AppTableActions } from "aps-design-pro";
+import { AppTableOperationBar } from "aps-design-pro";
 import { getProducts, updateProductStatus } from "@/api/modules/ecommerce";
 import { useFeedbackStore } from "@/stores/feedback";
 import type { ProductListQuery, ProductRecord, ProductStatus } from "@/types/ecommerce";
@@ -93,14 +96,14 @@ onMounted(() => { void loadProducts(); });
     <AppCard as="section" padding="none" fill-height class="data-table-card" aria-label="商品列表">
       <AppTableToolbar>
         <AppButton leading-icon="plus">新建商品</AppButton>
-        <template #actions><AppButton variant="secondary" size="small" leading-icon="download">导出商品</AppButton><AppButton variant="secondary" size="small" leading-icon="refresh" :loading="isLoading" @click="loadProducts()">刷新</AppButton></template>
+        <template #actions><AppTableOperationBar show-refresh :refresh-disabled="isLoading" @refresh="loadProducts()"><template #before><AppIconButton icon="download" label="导出商品" /></template></AppTableOperationBar></template>
       </AppTableToolbar>
-      <AppDataTable :rows="products" :columns="columns" row-key="id" :loading="isLoading" :error-message="errorMessage" virtual fill-height :virtual-row-height="68" empty-title="没有匹配商品" empty-description="调整关键词或状态后再试一次。" aria-label="商品列表"><template #cell-name="{ row }"><div class="product-cell"><span class="product-cover" :class="`is-${row.coverTone}`"><AppIcon name="grid" :size="17" /></span><div><strong>{{ row.name }}</strong><small>{{ row.category }}</small></div></div></template><template #cell-price="{ row }"><strong class="numeric">{{ formatAmount(row.price) }}</strong></template><template #cell-stock="{ row }"><strong class="numeric" :class="{ 'is-warning': row.stock < 30 }">{{ row.stock }}</strong></template><template #cell-status="{ row }"><AppStatusTag :tone="getStatusDisplay(row.status).tone" :label="getStatusDisplay(row.status).label" /></template><template #actions="{ row }"><button class="table-action" type="button" @click="toggleProduct(row)">{{ row.status === "on_sale" ? "下架" : "上架" }}</button></template></AppDataTable>
+      <AppDataTable :rows="products" :columns="columns" row-key="id" :loading="isLoading" :error-message="errorMessage" virtual fill-height :virtual-row-height="68" action-label="操作" empty-title="没有匹配商品" empty-description="调整关键词或状态后再试一次。" aria-label="商品列表"><template #cell-name="{ row }"><div class="product-cell"><span class="product-cover" :class="`is-${row.coverTone}`"><AppIcon name="grid" :size="17" /></span><div><strong>{{ row.name }}</strong><small>{{ row.category }}</small></div></div></template><template #cell-price="{ row }"><strong class="numeric">{{ formatAmount(row.price) }}</strong></template><template #cell-stock="{ row }"><strong class="numeric" :class="{ 'is-warning': row.stock < 30 }">{{ row.stock }}</strong></template><template #cell-status="{ row }"><AppStatusTag :tone="getStatusDisplay(row.status).tone" :label="getStatusDisplay(row.status).label" /></template><template #actions="{ row }"><AppTableActions><AppIconButton :icon="row.status === 'on_sale' ? 'close' : 'check'" :label="row.status === 'on_sale' ? '下架商品' : '上架商品'" size="small" :variant="row.status === 'on_sale' ? 'danger' : 'ghost'" @click="toggleProduct(row)" /></AppTableActions></template></AppDataTable>
       <AppPagination v-if="!isLoading && !errorMessage && products.length" :page="page" :page-size="pageSize" :total="total" :page-size-options="[10, 20, 30]" @update:page="updatePage" @update:page-size="updatePageSize" />
     </AppCard>
   </section>
 </template>
 
 <style scoped>
-.product-cell { display: flex; min-width: 0; align-items: center; gap: 10px; }.product-cover { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border-radius: 9px; color: #fff; }.product-cover.is-blue { background: #426b9e; }.product-cover.is-orange { background: #c2743c; }.product-cover.is-purple { background: #846ba4; }.product-cover.is-green { background: #438b77; }.product-cover.is-graphite { background: #4a5663; }.product-cell div { min-width: 0; }.product-cell strong, .product-cell small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.product-cell strong { color: var(--aps-ink); font-size: var(--aps-text-sm); font-weight: 680; }.product-cell small { margin-top: 3px; color: var(--aps-faint); font-size: var(--aps-text-xs); }.numeric { color: var(--aps-ink); font-variant-numeric: tabular-nums; }.numeric.is-warning { color: var(--aps-orange); }.table-action { padding: 0; border: 0; background: transparent; color: var(--aps-blue); font-size: var(--aps-text-sm); font-weight: 660; cursor: pointer; }.table-action:hover { text-decoration: underline; text-underline-offset: 3px; }
+.product-cell { display: flex; min-width: 0; align-items: center; gap: 10px; }.product-cover { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border-radius: 9px; color: #fff; }.product-cover.is-blue { background: #426b9e; }.product-cover.is-orange { background: #c2743c; }.product-cover.is-purple { background: #846ba4; }.product-cover.is-green { background: #438b77; }.product-cover.is-graphite { background: #4a5663; }.product-cell div { min-width: 0; }.product-cell strong, .product-cell small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.product-cell strong { color: var(--aps-ink); font-size: var(--aps-text-sm); font-weight: 680; }.product-cell small { margin-top: 3px; color: var(--aps-faint); font-size: var(--aps-text-xs); }.numeric { color: var(--aps-ink); font-variant-numeric: tabular-nums; }.numeric.is-warning { color: var(--aps-orange); }
 </style>

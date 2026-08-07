@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { AppButton } from "aps-design-pro";
+import { AppIconButton } from "aps-design-pro";
 import { AppEditableTable, AppPagination, AppStatusTag, AppTableBatchEditor, AppTableToolbar } from "aps-design-pro";
+import { AppTableActions } from "aps-design-pro";
+import { AppTableOperationBar } from "aps-design-pro";
 import { AppCard } from "aps-design-pro";
 import { AppFormField } from "aps-design-pro";
 import { AppInput } from "aps-design-pro";
@@ -155,8 +158,8 @@ function statusDisplay(status: ProductStatus): { label: string; tone: StatusTone
     </AppCard>
 
     <AppCard as="section" padding="none" fill-height class="editable-table-card" aria-label="课程可编辑表格">
-      <AppTableToolbar :selected-count="selectedProductKeys.length"><span class="table-summary">{{ lastAction }}</span><template #actions><AppButton variant="secondary" @click="resetProducts">刷新数据</AppButton></template><template #bulk><AppTableBatchEditor :selected-keys="selectedProductKeys" :fields="batchEditFields" :request="requestBatchEdit" @success="handleBatchSaved" @error="handleBatchError" /><AppButton variant="text" size="small" @click="selectedProductKeys = []">取消选择</AppButton></template></AppTableToolbar>
-      <AppEditableTable :rows="visibleProducts" :columns="tableColumns" row-key="id" selectable :selected-keys="selectedProductKeys" editable resizable bordered striped show-column-dividers aria-label="课程列表" action-label="操作" :validator="validateEdit" :request="requestEdit" @update:selected-keys="selectedProductKeys = $event" @edit-save="handleEditSaved" @edit-error="handleEditError"><template #display-price="{ value }"><strong class="price-cell">¥ {{ Number(value).toFixed(0) }}</strong></template><template #display-status="{ value }"><AppStatusTag :label="statusDisplay(value as ProductStatus).label" :tone="statusDisplay(value as ProductStatus).tone" /></template><template #actions="{ row }"><AppButton variant="text" size="small" @click="lastAction = `已查看 ${row.name}`">查看</AppButton></template></AppEditableTable>
+      <AppTableToolbar :selected-count="selectedProductKeys.length"><span class="table-summary">{{ lastAction }}</span><template #actions><AppTableOperationBar show-refresh refresh-label="刷新课程数据" @refresh="resetProducts" /></template><template #bulk><AppTableBatchEditor :selected-keys="selectedProductKeys" :fields="batchEditFields" :request="requestBatchEdit" @success="handleBatchSaved" @error="handleBatchError" /><AppIconButton icon="close" label="取消选择" size="small" @click="selectedProductKeys = []" /></template></AppTableToolbar>
+      <AppEditableTable :rows="visibleProducts" :columns="tableColumns" row-key="id" selectable :selected-keys="selectedProductKeys" editable resizable bordered striped show-column-dividers aria-label="课程列表" action-label="操作" :validator="validateEdit" :request="requestEdit" @update:selected-keys="selectedProductKeys = $event" @edit-save="handleEditSaved" @edit-error="handleEditError"><template #display-price="{ value }"><strong class="price-cell">¥ {{ Number(value).toFixed(0) }}</strong></template><template #display-status="{ value }"><AppStatusTag :label="statusDisplay(value as ProductStatus).label" :tone="statusDisplay(value as ProductStatus).tone" /></template><template #actions="{ row }"><AppTableActions><AppIconButton icon="eye" label="查看课程" size="small" @click="lastAction = `已查看 ${row.name}`" /></AppTableActions></template></AppEditableTable>
       <AppPagination :page="page" :page-size="pageSize" :total="total" :page-size-options="[4, 6, 8]" @update:page="page = $event" @update:page-size="pageSize = $event" />
     </AppCard>
   </section>

@@ -6,11 +6,14 @@ import { AppCard } from "aps-design-pro";
 import { AppDataTable } from "aps-design-pro";
 import { AppFilterBar } from "aps-design-pro";
 import { AppFormField } from "aps-design-pro";
+import { AppIconButton } from "aps-design-pro";
 import { AppPagination } from "aps-design-pro";
 import { AppSearchInput } from "aps-design-pro";
 import { AppSelect } from "aps-design-pro";
 import { AppStatusTag } from "aps-design-pro";
 import { AppTableToolbar } from "aps-design-pro";
+import { AppTableActions } from "aps-design-pro";
+import { AppTableOperationBar } from "aps-design-pro";
 import type { RefundListQuery, RefundRecord, RefundStatus } from "@/types/ecommerce";
 import type { DataTableColumn, SelectOption, StatusTone } from "aps-design-pro";
 
@@ -68,7 +71,7 @@ onMounted(() => { void loadRefunds(); });
 <template>
   <section class="page-content page-stack list-page-layout">
     <AppCard as="section" padding="large" content-overflow="visible" class="list-search-panel" aria-label="售后筛选条件"><AppFilterBar @submit="loadRefunds(true)" @reset="resetFilters"><AppFormField label="关键词" for="refund-keyword" label-position="inline" label-width="48px" label-gap="8px"><AppSearchInput id="refund-keyword" v-model="keyword" placeholder="搜索售后单、订单号或会员" @search="loadRefunds(true)" /></AppFormField><template #advanced><AppFormField label="状态" for="refund-status" label-position="inline" label-width="40px" label-gap="8px"><AppSelect id="refund-status" v-model="status" :options="statusOptions" /></AppFormField></template><template #actions><AppButton type="submit" leading-icon="search" :loading="isLoading">查询</AppButton></template></AppFilterBar></AppCard>
-    <AppCard as="section" padding="none" fill-height class="data-table-card" aria-label="售后申请列表"><AppTableToolbar><template #actions><AppButton variant="secondary" size="small" leading-icon="refresh" :loading="isLoading" @click="loadRefunds">刷新</AppButton></template></AppTableToolbar><AppDataTable :rows="refunds" :columns="columns" row-key="id" :loading="isLoading" :error-message="errorMessage" virtual fill-height :virtual-row-height="62" empty-title="没有匹配的售后申请" empty-description="调整查询条件后再试一次。" aria-label="售后申请列表"><template #cell-refundNo="{ row }"><button type="button" class="table-link">{{ row.refundNo }}</button></template><template #cell-orderNo="{ row }"><span class="order-no">{{ row.orderNo }}</span></template><template #cell-amount="{ row }"><strong class="numeric">{{ formatAmount(row.amount) }}</strong></template><template #cell-status="{ row }"><AppStatusTag :tone="getStatusDisplay(row.status).tone" :label="getStatusDisplay(row.status).label" /></template><template #actions="{ row }"><button type="button" class="table-link">{{ row.status === "pending" ? "去审核" : "查看" }}</button></template></AppDataTable><AppPagination v-if="!isLoading && !errorMessage && refunds.length" :page="page" :page-size="pageSize" :total="total" :page-size-options="[10, 20, 30]" @update:page="updatePage" @update:page-size="updatePageSize" /></AppCard>
+    <AppCard as="section" padding="none" fill-height class="data-table-card" aria-label="售后申请列表"><AppTableToolbar><template #actions><AppTableOperationBar show-refresh :refresh-disabled="isLoading" @refresh="loadRefunds" /></template></AppTableToolbar><AppDataTable :rows="refunds" :columns="columns" row-key="id" :loading="isLoading" :error-message="errorMessage" virtual fill-height :virtual-row-height="62" action-label="操作" empty-title="没有匹配的售后申请" empty-description="调整查询条件后再试一次。" aria-label="售后申请列表"><template #cell-refundNo="{ row }"><button type="button" class="table-link">{{ row.refundNo }}</button></template><template #cell-orderNo="{ row }"><span class="order-no">{{ row.orderNo }}</span></template><template #cell-amount="{ row }"><strong class="numeric">{{ formatAmount(row.amount) }}</strong></template><template #cell-status="{ row }"><AppStatusTag :tone="getStatusDisplay(row.status).tone" :label="getStatusDisplay(row.status).label" /></template><template #actions="{ row }"><AppTableActions><AppIconButton :icon="row.status === 'pending' ? 'edit' : 'eye'" :label="row.status === 'pending' ? '审核售后申请' : '查看售后申请'" size="small" /></AppTableActions></template></AppDataTable><AppPagination v-if="!isLoading && !errorMessage && refunds.length" :page="page" :page-size="pageSize" :total="total" :page-size-options="[10, 20, 30]" @update:page="updatePage" @update:page-size="updatePageSize" /></AppCard>
   </section>
 </template>
 

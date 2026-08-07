@@ -6,6 +6,7 @@ import { AppButton } from "aps-design-pro";
 import { AppCard } from "aps-design-pro";
 import { AppBarChartCard } from "aps-design-pro";
 import { AppDataTable } from "aps-design-pro";
+import { AppIconButton } from "aps-design-pro";
 import { AppLineChartCard } from "aps-design-pro";
 import { AppLoadingState } from "aps-design-pro";
 import { AppStatePanel } from "aps-design-pro";
@@ -87,7 +88,7 @@ onMounted(() => { void loadDashboard(); });
 
       <div class="content-grid">
         <AppCard as="section" padding="none" class="order-card">
-          <template #header><div class="card-heading"><div><h2>实时订单</h2><p>最新支付完成的订单会优先进入履约队列</p></div><RouterLink to="/trade/orders">查看全部</RouterLink></div></template>
+          <template #header><div class="card-heading"><div><h2>实时订单</h2><p>最新支付完成的订单会优先进入履约队列</p></div><RouterLink v-slot="{ navigate }" custom to="/trade/orders"><AppIconButton icon="arrow-right" label="查看全部实时订单" size="small" @click="navigate" /></RouterLink></div></template>
           <AppDataTable :rows="dashboardData.recentOrders" :columns="orderColumns" row-key="id" size="small" empty-title="暂无新订单" empty-description="当前时段还没有支付完成的订单。" aria-label="实时订单列表">
             <template #cell-orderNo="{ row }"><RouterLink class="table-link" :to="`/trade/orders/${row.id}`">{{ row.orderNo }}</RouterLink></template>
             <template #cell-amount="{ row }"><strong class="table-amount">{{ formatAmount(row.amount) }}</strong></template>

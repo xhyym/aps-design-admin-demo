@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from "vue";
-import { AppButton, AppButtonTable } from "aps-design-pro";
-import { AppColumnSettings, AppDataListCard, AppDataTable, AppExcelExport, AppExcelImport, AppExportTaskPanel, AppTableActions, AppTableHeader } from "aps-design-pro";
+import { AppButton } from "aps-design-pro";
+import { AppIconButton } from "aps-design-pro";
+import { AppColumnSettings, AppDataListCard, AppDataTable, AppDropdown, AppExcelExport, AppExcelImport, AppExportTaskPanel, AppTableActions, AppTableHeader } from "aps-design-pro";
 import { AppSearchInput } from "aps-design-pro";
 import { AppCard } from "aps-design-pro";
 import type { DropdownItem } from "aps-design-pro";
@@ -41,6 +42,8 @@ const isSearchVisible = ref(true);
 const isRefreshing = ref(false);
 const tableSize = ref<ControlSize>("default");
 const isTableFullscreen = ref(false);
+const isRowMoreOpen = ref<string | null>(null);
+const isStandaloneMoreOpen = ref(false);
 const columnVisibility = ref<Record<string, boolean>>(initialColumnVisibility);
 const importFiles = ref<UploadFileItem[]>([]);
 const exportTasks = ref<ExportTask[]>([
@@ -265,9 +268,12 @@ onBeforeUnmount(() => {
       >
         <template #cell-title="{ row }"><strong class="asset-title">{{ row.title }}</strong></template>
         <template #actions="{ row }">
-          <AppTableActions :more-items="tableMoreActions" more-label="更多" @select="handleRowAction($event, row)">
-            <AppButton size="small" variant="text" @click="inspectAsset(row)">查看</AppButton>
-          </AppTableActions>
+          <div class="table-row-actions">
+            <AppIconButton icon="eye" label="查看课程资源" size="small" @click="inspectAsset(row)" />
+            <AppDropdown :model-value="isRowMoreOpen === row.id" :items="tableMoreActions" menu-label="更多资源操作" @update:model-value="isRowMoreOpen = $event ? row.id : null" @select="handleRowAction($event, row)">
+              <template #trigger="{ toggle }"><AppIconButton icon="dots" label="更多资源操作" size="small" @click="toggle" /></template>
+            </AppDropdown>
+          </div>
         </template>
       </AppDataTable>
       <output class="resource-action-status" aria-live="polite">{{ actionStatus }}</output>
@@ -279,7 +285,7 @@ onBeforeUnmount(() => {
         { key: 'draft', label: '待补充资料', value: 6, detail: '需要维护人继续完善' },
         { key: 'sync', label: '上次同步', value: '09:42', detail: '数据服务状态正常' },
       ]">
-        <template #actions><AppButton size="small" variant="text" @click="actionStatus = '已打开资源同步记录。'">查看记录</AppButton></template>
+        <template #actions><AppIconButton icon="eye" label="查看资源同步记录" size="small" @click="actionStatus = '已打开资源同步记录。'" /></template>
       </AppDataListCard>
 
       <AppCard as="article" padding="large" class="import-card">
@@ -290,9 +296,12 @@ onBeforeUnmount(() => {
 
       <AppCard as="article" padding="large" content-overflow="visible" class="actions-card">
         <header class="extension-card-heading"><div><h2>紧凑操作组合</h2><p>行内操作与更多菜单共享同一键盘路径，低频或危险操作不会挤占表格主操作区。</p></div><span>AppButtonTable</span></header>
-        <AppButtonTable :more-items="tableMoreActions" more-label="资源操作" @select="handleStandaloneAction">
-          <AppButton size="small" variant="secondary" @click="actionStatus = '已保存资源草稿。'">保存草稿</AppButton>
-        </AppButtonTable>
+        <AppTableActions>
+          <AppIconButton icon="check" label="保存资源草稿" size="small" variant="secondary" @click="actionStatus = '已保存资源草稿。'" />
+          <AppDropdown v-model="isStandaloneMoreOpen" :items="tableMoreActions" menu-label="资源操作" @select="handleStandaloneAction">
+            <template #trigger="{ toggle }"><AppIconButton icon="dots" label="资源操作" size="small" @click="toggle" /></template>
+          </AppDropdown>
+        </AppTableActions>
         <p class="extension-result" role="status">{{ exportStatus }}</p>
       </AppCard>
 
@@ -315,6 +324,8 @@ onBeforeUnmount(() => {
 .resource-search-row :deep(.app-search-input) { width: min(100%, 360px); }
 .resource-action-status { display: block; min-height: 42px; padding: 11px var(--aps-card-padding); border-top: 1px solid var(--aps-line-soft); color: var(--aps-muted); font-size: var(--aps-text-sm); line-height: 1.5; }
 .asset-title { color: var(--aps-ink); font-size: var(--aps-text-sm); font-weight: 680; }
+.table-row-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.resource-table-card :deep(.column-settings-trigger), .resource-table-card :deep(button[aria-label^="导出 "]) { width: var(--aps-control-height); min-width: var(--aps-control-height); padding: 0; font-size: 0; }
 .table-extension-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--aps-page-stack-gap); }
 .import-card, .actions-card, .export-card { display: grid; min-width: 0; align-content: start; gap: 18px; }
 .extension-card-heading { display: flex; min-width: 0; align-items: start; justify-content: space-between; gap: 14px; }

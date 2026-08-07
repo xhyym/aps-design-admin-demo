@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { AppButton } from "aps-design-pro";
+import { AppIconButton } from "aps-design-pro";
 import { AppDataTable } from "aps-design-pro";
 import { AppStatusTag } from "aps-design-pro";
 import { AppTableOperationBar } from "aps-design-pro";
@@ -198,7 +198,7 @@ async function removeDeliveryView(viewId: string): Promise<void> {
     </AppCard>
 
     <AppCard as="section" padding="none" class="table-pattern-card" aria-label="树形层级表格">
-      <AppTableToolbar><span class="table-pattern-caption">资源层级</span><template #actions><AppButton variant="secondary" size="small" @click="treeExpandedKeys = ['resource-platform', 'resource-web', 'resource-data', 'resource-product']">展开全部</AppButton><AppButton variant="ghost" size="small" @click="treeExpandedKeys = []">收起全部</AppButton></template></AppTableToolbar>
+      <AppTableToolbar><span class="table-pattern-caption">资源层级</span><template #actions><AppTableOperationBar><template #before><AppIconButton icon="chevron-down" label="展开全部资源层级" size="small" variant="secondary" @click="treeExpandedKeys = ['resource-platform', 'resource-web', 'resource-data', 'resource-product']" /><AppIconButton icon="chevron-up" label="收起全部资源层级" size="small" @click="treeExpandedKeys = []" /></template></AppTableOperationBar></template></AppTableToolbar>
       <AppDataTable :rows="RESOURCE_ROWS" :columns="RESOURCE_COLUMNS" row-key="id" tree-children-key="children" :tree-expanded-keys="treeExpandedKeys" :tree-indent="20" show-index striped show-column-dividers aria-label="资源层级表" @update:tree-expanded-keys="treeExpandedKeys = $event"><template #cell-status="{ row }"><AppStatusTag :tone="getStatusDisplay(row.status).tone" :label="getStatusDisplay(row.status).label" /></template><template #cell-capacity="{ row }"><strong class="capacity-value">{{ row.capacity }} 人日</strong></template></AppDataTable>
     </AppCard>
 
