@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       aps-design-pro:
-        specifier: ^0.1.2
-        version: 0.1.2(vue@3.5.41(typescript@5.9.3))
+        specifier: ^0.2.0
+        version: 0.2.0(vue@3.5.41(typescript@5.9.3))
       axios:
         specifier: ^1.8.4
         version: 1.19.0
@@ -442,8 +442,8 @@ packages:
   alien-signals@1.0.13:
     resolution: {integrity: sha512-OGj9yyTnJEttvzhTUWuscOvtqxq5vrhF7vL9oS0xJ2mK0ItPYP1/y+vCFebfxoEyAz0++1AIwJ5CMr+Fk3nDmg==}
 
-  aps-design-pro@0.1.2:
-    resolution: {integrity: sha512-7uXFd1h5xfpSxhEJY9FUTfgZYasN5cPs9X6Yxe66Cu152bmAcI8iBtaNuZ7tC+NrWLMc7bGGL1lKoX2ekmGh2w==}
+  aps-design-pro@0.2.0:
+    resolution: {integrity: sha512-KRpwZMgAp6klgkq/K+/Us24MDKLqqoSaIIzCBQvKPxrPa6MI8HCh213ViqfS7zpXyzXD3V2uPIp4Sog4udCkNw==}
     peerDependencies:
       vue: ^3.5.0
 
@@ -1056,7 +1056,7 @@ snapshots:
 
   alien-signals@1.0.13: {}
 
-  aps-design-pro@0.1.2(vue@3.5.41(typescript@5.9.3)):
+  aps-design-pro@0.2.0(vue@3.5.41(typescript@5.9.3)):
     dependencies:
       echarts: 6.1.0
       vue: 3.5.41(typescript@5.9.3)

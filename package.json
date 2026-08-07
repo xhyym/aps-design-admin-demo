@@ -12,7 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "aps-design-pro": "^0.1.2",
+    "aps-design-pro": "^0.2.0",
     "axios": "^1.8.4",
     "pinia": "^3.0.1",
     "vue": "^3.5.13",

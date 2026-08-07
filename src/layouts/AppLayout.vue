@@ -560,8 +560,8 @@ onBeforeUnmount(() => {
 .app-sidebar { display: flex; min-width: 0; min-height: 0; height: 100%; flex-direction: column; overflow: hidden; padding: 16px 12px 14px; border-right: 1px solid var(--aps-line-soft); background: var(--aps-sidebar); transition: padding 180ms ease; }
 .brand-area { display: flex; min-height: 50px; align-items: center; padding: 0 8px; }
 .brand { display: inline-flex; width: 100%; min-height: 42px; align-items: center; gap: 10px; color: var(--aps-ink); font-size: var(--aps-text-lg); font-weight: 760; letter-spacing: -.035em; }
-.side-nav { display: grid; min-height: 0; flex: 1 1 auto; align-content: start; gap: 4px; margin-top: 18px; padding: 0 2px 12px 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: var(--aps-line) transparent; scrollbar-width: thin; }
-.side-nav::-webkit-scrollbar { width: 4px; }.side-nav::-webkit-scrollbar-track { background: transparent; }.side-nav::-webkit-scrollbar-thumb { border-radius: 99px; background: var(--aps-line); }.side-nav::-webkit-scrollbar-thumb:hover { background: var(--aps-muted); }
+.side-nav { display: grid; min-height: 0; flex: 1 1 auto; align-content: start; gap: 4px; margin-top: 18px; padding: 0 2px 12px 0; overflow-y: auto; overscroll-behavior: contain; -ms-overflow-style: none; scrollbar-width: none; }
+.side-nav::-webkit-scrollbar { display: none; }
 .nav-link, .nav-child { display: flex; min-height: 42px; align-items: center; border-radius: 10px; color: var(--aps-muted); font-size: var(--aps-text-base); font-weight: 620; transition: background-color 180ms ease, color 180ms ease; }
 .nav-link { gap: 11px; padding: 0 11px; }
 .nav-link:hover, .nav-link.router-link-active, .nav-child:hover, .nav-child.router-link-active { background: var(--aps-blue-soft); color: var(--aps-blue); }
