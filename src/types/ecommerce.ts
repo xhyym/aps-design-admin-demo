@@ -1,6 +1,8 @@
 import type { PageResult, SortOrder } from "./api";
 
 export type ProductStatus = "on_sale" | "draft" | "archived";
+export type ProductSkuStatus = "enabled" | "disabled";
+export type ProductCoverTone = "blue" | "orange" | "purple" | "green" | "graphite";
 export type RefundStatus = "pending" | "reviewing" | "approved" | "rejected" | "completed";
 export type MemberLevel = "黑金会员" | "铂金会员" | "黄金会员" | "普通会员";
 export type CampaignStatus = "scheduled" | "running" | "ended";
@@ -16,7 +18,73 @@ export interface ProductRecord {
   sales: number;
   status: ProductStatus;
   updatedAt: string;
-  coverTone: "blue" | "orange" | "purple" | "green" | "graphite";
+  coverTone: ProductCoverTone;
+  coverUrl: string;
+}
+
+/** 商品列表仅保留检索与展示字段，复杂编辑内容由详情接口单独返回。 */
+export interface ProductMedia {
+  id: string;
+  url: string;
+  alt: string;
+}
+
+export interface ProductSpecification {
+  id: string;
+  name: string;
+  values: string[];
+}
+
+export interface ProductSku {
+  id: string;
+  specValues: string[];
+  sku: string;
+  barcode: string;
+  price: number;
+  stock: number;
+  status: ProductSkuStatus;
+}
+
+/** 商品详情承载素材、富文本和 SKU，不与高频列表接口混用。 */
+export interface ProductDetail {
+  id: string;
+  name: string;
+  category: string;
+  categoryPath: string[];
+  brand: string;
+  highlights: string[];
+  status: ProductStatus;
+  coverTone: ProductCoverTone;
+  media: ProductMedia[];
+  description: string;
+  specifications: ProductSpecification[];
+  skus: ProductSku[];
+  sales: number;
+  updatedAt: string;
+}
+
+/** 新建和编辑共享稳定输入结构，服务端负责派生列表中的价格、库存和主 SKU。 */
+export interface ProductSaveInput {
+  name: string;
+  category: string;
+  categoryPath: string[];
+  brand: string;
+  highlights: string[];
+  status: ProductStatus;
+  coverTone: ProductCoverTone;
+  media: ProductMedia[];
+  description: string;
+  specifications: ProductSpecification[];
+  skus: ProductSku[];
+}
+
+export type ProductBatchUpdateInput =
+  | { ids: string[]; field: "status"; value: ProductStatus }
+  | { ids: string[]; field: "category"; value: string; categoryPath: string[] };
+
+export interface ProductImportResult {
+  importedCount: number;
+  productIds: string[];
 }
 
 export interface RefundRecord {
@@ -97,9 +165,10 @@ export interface OperationsDashboardData {
 export interface ProductListQuery {
   keyword?: string;
   status?: ProductStatus | "";
+  category?: string;
   page?: number;
   pageSize?: number;
-  sortBy?: "updatedAt" | "sales" | "stock";
+  sortBy?: "updatedAt" | "price" | "sales" | "stock";
   sortOrder?: SortOrder;
 }
 

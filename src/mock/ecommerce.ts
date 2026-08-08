@@ -3,7 +3,9 @@ import type {
   InventoryRecord,
   MemberRecord,
   OperationsDashboardData,
-  ProductRecord,
+  ProductCoverTone,
+  ProductDetail,
+  ProductSku,
   RefundRecord,
 } from "@/types/ecommerce";
 
@@ -11,16 +13,85 @@ import type {
  * 电商演示数据只用于前端能力验证，不对应真实订单、商品或会员资料。
  * 数据刻意覆盖低库存、售后审核、沉默会员等运营边界，便于页面展示状态处理。
  */
-export const products: ProductRecord[] = [
-  { id: "product-001", name: "云岚手冲咖啡礼盒", sku: "COF-GIFT-001", category: "咖啡器具", price: 269, stock: 186, sales: 1482, status: "on_sale", updatedAt: "今天 10:32", coverTone: "blue" },
-  { id: "product-002", name: "山野冷萃咖啡液 12 瓶", sku: "COF-COLD-012", category: "即饮咖啡", price: 128, stock: 42, sales: 2693, status: "on_sale", updatedAt: "今天 09:18", coverTone: "green" },
-  { id: "product-003", name: "曜石手冲壶 600ml", sku: "BREW-KETTLE-600", category: "咖啡器具", price: 319, stock: 18, sales: 729, status: "on_sale", updatedAt: "昨天 18:20", coverTone: "graphite" },
-  { id: "product-004", name: "深烘拼配挂耳咖啡 20 包", sku: "COF-DRIP-020", category: "咖啡豆", price: 96, stock: 0, sales: 3811, status: "on_sale", updatedAt: "昨天 15:08", coverTone: "orange" },
-  { id: "product-005", name: "春日限定品鉴套装", sku: "COF-SPRING-BOX", category: "礼盒", price: 199, stock: 88, sales: 356, status: "draft", updatedAt: "2026-08-01 16:40", coverTone: "purple" },
-  { id: "product-006", name: "旅行随行保温杯", sku: "LIFE-MUG-450", category: "生活方式", price: 159, stock: 214, sales: 941, status: "on_sale", updatedAt: "2026-07-31 11:22", coverTone: "blue" },
-  { id: "product-007", name: "埃塞俄比亚日晒豆 250g", sku: "BEAN-ETH-250", category: "咖啡豆", price: 109, stock: 23, sales: 1183, status: "on_sale", updatedAt: "2026-07-30 17:56", coverTone: "orange" },
-  { id: "product-008", name: "木质滤杯与滤纸套装", sku: "BREW-DRIPPER-01", category: "咖啡器具", price: 149, stock: 67, sales: 516, status: "archived", updatedAt: "2026-07-28 14:10", coverTone: "graphite" },
+interface ProductSeed {
+  id: string;
+  name: string;
+  sku: string;
+  category: string;
+  price: number;
+  stock: number;
+  sales: number;
+  status: ProductDetail["status"];
+  updatedAt: string;
+  coverTone: ProductCoverTone;
+  brand: string;
+}
+
+const productSeeds: ProductSeed[] = [
+  { id: "product-001", name: "云岚手冲咖啡礼盒", sku: "COF-GIFT-001", category: "咖啡器具", price: 269, stock: 186, sales: 1482, status: "on_sale", updatedAt: "今天 10:32", coverTone: "blue", brand: "云岚咖啡" },
+  { id: "product-002", name: "山野冷萃咖啡液 12 瓶", sku: "COF-COLD-012", category: "即饮咖啡", price: 128, stock: 42, sales: 2693, status: "on_sale", updatedAt: "今天 09:18", coverTone: "green", brand: "山野实验室" },
+  { id: "product-003", name: "曜石手冲壶 600ml", sku: "BREW-KETTLE-600", category: "咖啡器具", price: 319, stock: 18, sales: 729, status: "on_sale", updatedAt: "昨天 18:20", coverTone: "graphite", brand: "曜石器物" },
+  { id: "product-004", name: "深烘拼配挂耳咖啡 20 包", sku: "COF-DRIP-020", category: "咖啡豆", price: 96, stock: 0, sales: 3811, status: "on_sale", updatedAt: "昨天 15:08", coverTone: "orange", brand: "云岚咖啡" },
+  { id: "product-005", name: "春日限定品鉴套装", sku: "COF-SPRING-BOX", category: "礼盒", price: 199, stock: 88, sales: 356, status: "draft", updatedAt: "2026-08-01 16:40", coverTone: "purple", brand: "山野实验室" },
+  { id: "product-006", name: "旅行随行保温杯", sku: "LIFE-MUG-450", category: "生活方式", price: 159, stock: 214, sales: 941, status: "on_sale", updatedAt: "2026-07-31 11:22", coverTone: "blue", brand: "漫游日常" },
+  { id: "product-007", name: "埃塞俄比亚日晒豆 250g", sku: "BEAN-ETH-250", category: "咖啡豆", price: 109, stock: 23, sales: 1183, status: "on_sale", updatedAt: "2026-07-30 17:56", coverTone: "orange", brand: "云岚咖啡" },
+  { id: "product-008", name: "木质滤杯与滤纸套装", sku: "BREW-DRIPPER-01", category: "咖啡器具", price: 149, stock: 67, sales: 516, status: "archived", updatedAt: "2026-07-28 14:10", coverTone: "graphite", brand: "曜石器物" },
 ];
+
+/** 详情模型中的分类路径保存级联组件所需的稳定值，列表仍使用 category 展示中文名称。 */
+const PRODUCT_CATEGORY_VALUE_MAP: Record<string, string> = {
+  "咖啡器具": "coffee-tools",
+  "即饮咖啡": "ready-to-drink",
+  "咖啡豆": "coffee-beans",
+  "礼盒": "gift-boxes",
+  "生活方式": "lifestyle",
+  "待分类": "unclassified",
+};
+
+/** 静态 SVG 让演示在离线环境中也保留真实商品缩略图和图片预览能力。 */
+function createProductCover(name: string, tone: ProductCoverTone): string {
+  const palette: Record<ProductCoverTone, [string, string]> = {
+    blue: ["#1b3858", "#7eadd0"],
+    orange: ["#813f1c", "#e4a66f"],
+    purple: ["#4a385f", "#ad91cc"],
+    green: ["#1e574b", "#7fc4aa"],
+    graphite: ["#252a30", "#8f99a4"],
+  };
+  const [deepColor, lightColor] = palette[tone];
+  const title = name.slice(0, 4);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 480"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${deepColor}"/><stop offset="1" stop-color="${lightColor}"/></linearGradient></defs><rect width="720" height="480" rx="42" fill="url(#g)"/><circle cx="570" cy="104" r="130" fill="#fff" opacity=".11"/><circle cx="124" cy="408" r="156" fill="#fff" opacity=".08"/><path d="M286 172h148l34 142H252z" fill="#fff" opacity=".16"/><path d="M304 154c0-32 24-56 56-56s56 24 56 56" fill="none" stroke="#fff" stroke-width="20" stroke-linecap="round" opacity=".65"/><text x="52" y="410" fill="#fff" font-family="PingFang SC, sans-serif" font-size="52" font-weight="700">${title}</text></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+function createSku(seed: ProductSeed): ProductSku {
+  return {
+    id: `${seed.id}-sku-default`,
+    specValues: ["默认规格"],
+    sku: seed.sku,
+    barcode: `69${seed.id.replace(/\D/g, "").padStart(11, "0")}`,
+    price: seed.price,
+    stock: seed.stock,
+    status: seed.status === "archived" ? "disabled" : "enabled",
+  };
+}
+
+/** 详情数据比列表多保留业务编辑字段，列表页只获取派生后的轻量记录。 */
+export const productDetails: ProductDetail[] = productSeeds.map((seed) => ({
+  id: seed.id,
+  name: seed.name,
+  category: seed.category,
+  categoryPath: ["all-products", PRODUCT_CATEGORY_VALUE_MAP[seed.category] ?? "unclassified"],
+  brand: seed.brand,
+  highlights: ["现货速发", "支持七天无理由", seed.category],
+  status: seed.status,
+  coverTone: seed.coverTone,
+  media: [{ id: `${seed.id}-media-cover`, url: createProductCover(seed.name, seed.coverTone), alt: `${seed.name}主图` }],
+  description: `<p>${seed.name}，为日常使用与礼赠场景准备。</p><p>商品详情支持由运营人员按实际卖点维护。</p>`,
+  specifications: [{ id: `${seed.id}-spec-default`, name: "规格", values: ["默认规格"] }],
+  skus: [createSku(seed)],
+  sales: seed.sales,
+  updatedAt: seed.updatedAt,
+}));
 
 export const refunds: RefundRecord[] = [
   { id: "refund-001", refundNo: "RF-20260803-0008", orderNo: "SO-20260803-0318", memberName: "陈一然", reason: "商品破损", amount: 128, status: "pending", requestedAt: "今天 10:26" },

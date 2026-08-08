@@ -90,7 +90,8 @@ const canCloseTabsToRight = computed(() => tabMenuIndex.value >= 0 && tabs.value
 const userMenuItems: DropdownItem[] = [
   { key: "profile", label: "个人中心", icon: "user" },
   { key: "settings", label: "偏好设置", icon: "settings" },
-  { key: "logout", label: "退出登录", icon: "logout", danger: true },
+  { key: "website", label: "访问官网", icon: "arrow-right" },
+  { key: "logout", label: "退出登录", icon: "logout", danger: true, divided: true },
 ];
 const themeOptions: RadioOption[] = [
   { label: "浅色", value: "light", description: "中性明亮的默认界面" },
@@ -353,9 +354,14 @@ function openProfile(): void {
   void router.push("/profile");
 }
 
+function openOfficialWebsite(): void {
+  window.open("https://apsdesignpro.com/", "_blank", "noopener,noreferrer");
+}
+
 function handleUserMenuAction(action: string): void {
   if (action === "profile") openProfile();
   if (action === "settings") isSettingsOpen.value = true;
+  if (action === "website") openOfficialWebsite();
   if (action === "logout") requestLogout();
 }
 
@@ -520,7 +526,7 @@ onBeforeUnmount(() => {
             </section>
           </AppPopover>
 
-          <AppDropdown v-model="isUserMenuOpen" :items="userMenuItems" menu-label="账户菜单" @select="handleUserMenuAction"><template #trigger="{ open, toggle }"><button class="profile-button" type="button" :aria-expanded="open" @click="toggle"><span class="profile-avatar">{{ authStore.profile?.initials }}</span><span class="profile-copy"><strong>{{ authStore.profile?.name }}</strong><small>{{ authStore.profile?.title }}</small></span><AppIcon name="chevron-down" :size="15" /></button></template><template #header><div class="user-popover-profile"><span class="profile-avatar">{{ authStore.profile?.initials }}</span><div><strong>{{ authStore.profile?.name }}</strong><span>{{ authStore.profile?.title }}</span></div></div></template></AppDropdown>
+          <AppDropdown v-model="isUserMenuOpen" :items="userMenuItems" menu-label="账户菜单" @select="handleUserMenuAction"><template #trigger="{ open, toggle }"><button class="profile-button" type="button" :aria-expanded="open" @click="toggle"><span class="profile-avatar">{{ authStore.profile?.initials }}</span><span class="profile-copy"><strong>{{ authStore.profile?.name }}</strong><small>{{ authStore.profile?.title }}</small></span><AppIcon name="chevron-down" :size="15" /></button></template><template #header><div class="user-popover-profile"><div class="user-popover-avatar" aria-hidden="true">{{ authStore.profile?.initials }}</div><div><strong>{{ authStore.profile?.name }}</strong><span>{{ authStore.profile?.title }}</span></div></div></template></AppDropdown>
         </div>
       </header>
 
@@ -620,8 +626,9 @@ onBeforeUnmount(() => {
 .notification-list strong { display: block; color: var(--aps-ink); font-size: var(--aps-text-sm); font-weight: 680; }
 .notification-list p { margin: 3px 0 0; color: var(--aps-muted); font-size: var(--aps-text-xs); line-height: 1.5; }
 .notification-list time { display: block; margin-top: 5px; color: var(--aps-faint); font-size: var(--aps-text-2xs); }
-.user-popover-profile { display: flex; align-items: center; gap: 9px; padding: 10px; border-bottom: 1px solid var(--aps-line-soft); }
-.user-popover-profile strong, .user-popover-profile span { display: block; }
+.user-popover-profile { display: grid; grid-template-columns: 31px minmax(0, 1fr); align-items: center; column-gap: 9px; padding: 10px; border-bottom: 1px solid var(--aps-line-soft); }
+.user-popover-avatar { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 50%; background: #314b69; color: var(--aps-surface); font-size: var(--aps-text-sm); font-weight: 750; line-height: 1; }
+.user-popover-profile > div { display: grid; min-width: 0; min-height: 31px; align-content: center; }.user-popover-profile > div > strong, .user-popover-profile > div > span { display: block; }
 .user-popover-profile strong { color: var(--aps-ink); font-size: var(--aps-text-sm); }
 .user-popover-profile div > span { margin-top: 2px; color: var(--aps-faint); font-size: var(--aps-text-2xs); }
 .tabbar { display: flex; min-width: 0; align-items: end; justify-content: space-between; gap: 8px; padding: 0 18px 0 24px; border-bottom: 1px solid var(--aps-line-soft); background: var(--aps-surface); }

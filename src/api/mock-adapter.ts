@@ -1,5 +1,6 @@
 import type { AxiosAdapter, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import dashboardResponse from "@/mock/dashboard.json";
+import { productDetails } from "@/mock/ecommerce";
 import loginResponse from "@/mock/login.json";
 import menusResponse from "@/mock/menus.json";
 import ordersResponse from "@/mock/orders.json";
@@ -11,11 +12,12 @@ import type { DashboardData } from "@/types/dashboard";
 import type { UploadedFile } from "@/types/files";
 import type { ExportTask, UploadChunkSession } from "aps-design-pro";
 import type { OrderExportQuery, SalesOrder } from "@/types/orders";
+import type { ProductBatchUpdateInput, ProductDetail, ProductImportResult, ProductListQuery, ProductMedia, ProductPageResult, ProductRecord, ProductSaveInput, ProductSku, ProductSpecification, ProductStatus } from "@/types/ecommerce";
 import type { SystemMenu, SystemMenuInput, SystemRole, SystemRoleInput, SystemUser, SystemUserInput, UserStatus } from "@/types/system";
 
-type AdapterData = LoginResult | DashboardData | PageResult<SystemUser> | PageResult<SystemRole> | PageResult<SystemMenu> | PageResult<SalesOrder> | SystemUser | SystemRole | SystemMenu | SalesOrder | SalesOrder[] | ExportTask | ExportTask[] | UploadChunkSession | UploadedFile | null;
+type AdapterData = LoginResult | DashboardData | PageResult<SystemUser> | PageResult<SystemRole> | PageResult<SystemMenu> | PageResult<SalesOrder> | ProductPageResult | SystemUser | SystemRole | SystemMenu | SalesOrder | SalesOrder[] | ProductDetail | ProductRecord[] | ProductImportResult | ExportTask | ExportTask[] | UploadChunkSession | UploadedFile | null;
 type AdapterResponse = ApiResponse<AdapterData>;
-type CollectionKey = "users" | "roles" | "menus";
+type CollectionKey = "users" | "roles" | "menus" | "products";
 type UserStatusPayload = { ids: string[]; status: UserStatus };
 
 const RESPONSE_DELAY = 180;
@@ -27,12 +29,22 @@ const STORAGE_KEYS: Record<CollectionKey, string> = {
   users: "aps-data-users",
   roles: "aps-data-roles",
   menus: "aps-data-menus",
+  products: "aps-data-products",
+};
+const PRODUCT_CATEGORY_VALUE_MAP: Record<string, string> = {
+  "咖啡器具": "coffee-tools",
+  "即饮咖啡": "ready-to-drink",
+  "咖啡豆": "coffee-beans",
+  "礼盒": "gift-boxes",
+  "生活方式": "lifestyle",
+  "待分类": "unclassified",
 };
 
 const database = {
   users: readCollection<SystemUser>(STORAGE_KEYS.users, (usersResponse as ApiResponse<PageResult<SystemUser>>).data.list),
   roles: readCollection<SystemRole>(STORAGE_KEYS.roles, (rolesResponse as ApiResponse<PageResult<SystemRole>>).data.list),
   menus: readCollection<SystemMenu>(STORAGE_KEYS.menus, (menusResponse as ApiResponse<PageResult<SystemMenu>>).data.list),
+  products: readCollection<ProductDetail>(STORAGE_KEYS.products, productDetails).map(normalizeStoredProductCategoryPath),
 };
 const orders = cloneData((ordersResponse as ApiResponse<SalesOrder[]>).data);
 
@@ -113,6 +125,13 @@ function persistCollection<TItem>(key: CollectionKey, collection: TItem[]): void
   sessionStorage.setItem(STORAGE_KEYS[key], JSON.stringify(collection));
 }
 
+/** 会话中可能遗留旧版中文分类路径，启动时转换为 Cascader 可识别的稳定 value，避免编辑页显示为空。 */
+function normalizeStoredProductCategoryPath(product: ProductDetail): ProductDetail {
+  const expectedPath = ["all-products", PRODUCT_CATEGORY_VALUE_MAP[product.category] ?? "unclassified"];
+  if (product.categoryPath.join("/") === expectedPath.join("/")) return product;
+  return { ...product, categoryPath: expectedPath };
+}
+
 function getRequestData<TData>(config: AxiosRequestConfig): TData {
   if (typeof config.data === "string") {
     return JSON.parse(config.data) as TData;
@@ -177,6 +196,161 @@ function filterUsers(items: SystemUser[], config: AxiosRequestConfig): SystemUse
 /** 订单状态与来源是服务端筛选条件，避免业务页在已分页的数据上再次截断。 */
 function filterOrders(items: SalesOrder[], config: AxiosRequestConfig): SalesOrder[] {
   return filterOrdersByQuery(items, config.params as OrderExportQuery);
+}
+
+/** 列表记录由详情实时派生，避免编辑 SKU 后出现价格、库存与主 SKU 不一致。 */
+function toProductRecord(product: ProductDetail): ProductRecord {
+  const visibleSkus = product.skus.filter((sku) => sku.status === "enabled");
+  const availableSkus = visibleSkus.length ? visibleSkus : product.skus;
+  const primarySku = availableSkus[0];
+  const prices = availableSkus.map((sku) => sku.price);
+  return {
+    id: product.id,
+    name: product.name,
+    sku: primarySku?.sku ?? "未配置 SKU",
+    category: product.category,
+    price: prices.length ? Math.min(...prices) : 0,
+    stock: availableSkus.reduce((total, sku) => total + sku.stock, 0),
+    sales: product.sales,
+    status: product.status,
+    updatedAt: product.updatedAt,
+    coverTone: product.coverTone,
+    coverUrl: product.media[0]?.url ?? "",
+  };
+}
+
+function filterProducts(items: ProductRecord[], config: AxiosRequestConfig): ProductRecord[] {
+  const query = config.params as ProductListQuery | undefined;
+  const status = query?.status ?? "";
+  const category = query?.category?.trim() ?? "";
+  return items.filter((item) => (!status || item.status === status) && (!category || item.category === category));
+}
+
+function getProductListResponse(config: AxiosRequestConfig): ApiResponse<ProductPageResult> {
+  const records = database.products.map(toProductRecord);
+  return createPageResponse(records, config, ["name", "sku", "category", "price", "stock", "sales", "updatedAt"], "获取商品列表成功", filterProducts);
+}
+
+/** 所有写入先标准化为稳定值，避免错误的上传地址或 SKU 数值污染会话数据。 */
+function normalizeProductInput(input: ProductSaveInput, id: string, current?: ProductDetail): ProductDetail {
+  return {
+    id,
+    name: input.name.trim(),
+    category: input.category.trim(),
+    categoryPath: input.categoryPath.map((item) => item.trim()).filter(Boolean),
+    brand: input.brand.trim(),
+    highlights: input.highlights.map((item) => item.trim()).filter(Boolean).slice(0, 8),
+    status: input.status,
+    coverTone: input.coverTone,
+    media: input.media.map((item, index) => ({ id: item.id || `${id}-media-${index + 1}`, url: item.url.trim(), alt: item.alt.trim() || `${input.name.trim()}商品图` })),
+    description: input.description.trim(),
+    specifications: input.specifications.map((item, index) => ({ id: item.id || `${id}-spec-${index + 1}`, name: item.name.trim(), values: item.values.map((value) => value.trim()).filter(Boolean) })),
+    skus: input.skus.map((item, index) => normalizeProductSku(item, id, index)),
+    sales: current?.sales ?? 0,
+    updatedAt: getCurrentTimeLabel(),
+  };
+}
+
+function normalizeProductSku(sku: ProductSku, productId: string, index: number): ProductSku {
+  return {
+    id: sku.id || `${productId}-sku-${index + 1}`,
+    specValues: sku.specValues.map((value) => value.trim()).filter(Boolean),
+    sku: sku.sku.trim(),
+    barcode: sku.barcode.trim(),
+    price: Math.max(0, Number.isFinite(sku.price) ? Number(sku.price.toFixed(2)) : 0),
+    stock: Math.max(0, Math.floor(Number.isFinite(sku.stock) ? sku.stock : 0)),
+    status: sku.status,
+  };
+}
+
+function isProductStatus(value: unknown): value is ProductStatus {
+  return value === "on_sale" || value === "draft" || value === "archived";
+}
+
+function isProductSaveInput(value: Partial<ProductSaveInput>): value is ProductSaveInput {
+  return typeof value.name === "string"
+    && value.name.trim().length >= 2
+    && typeof value.category === "string"
+    && value.category.trim().length > 0
+    && Array.isArray(value.categoryPath)
+    && typeof value.brand === "string"
+    && Array.isArray(value.highlights)
+    && isProductStatus(value.status)
+    && ["blue", "orange", "purple", "green", "graphite"].includes(String(value.coverTone))
+    && Array.isArray(value.media)
+    && value.media.every(isProductMedia)
+    && typeof value.description === "string"
+    && Array.isArray(value.specifications)
+    && value.specifications.every(isProductSpecification)
+    && Array.isArray(value.skus)
+    && value.skus.length > 0
+    && value.skus.every(isProductSku);
+}
+
+function isProductMedia(value: unknown): value is ProductMedia {
+  if (!value || typeof value !== "object") return false;
+  const media = value as Partial<ProductMedia>;
+  return typeof media.id === "string" && typeof media.url === "string" && media.url.trim().length > 0 && typeof media.alt === "string";
+}
+
+function isProductSpecification(value: unknown): value is ProductSpecification {
+  if (!value || typeof value !== "object") return false;
+  const specification = value as Partial<ProductSpecification>;
+  return typeof specification.id === "string" && typeof specification.name === "string" && Array.isArray(specification.values) && specification.values.every((item) => typeof item === "string");
+}
+
+function isProductSku(value: unknown): value is ProductSku {
+  if (!value || typeof value !== "object") return false;
+  const sku = value as Partial<ProductSku>;
+  return typeof sku.id === "string"
+    && Array.isArray(sku.specValues)
+    && sku.specValues.every((item) => typeof item === "string")
+    && typeof sku.sku === "string"
+    && sku.sku.trim().length > 0
+    && typeof sku.barcode === "string"
+    && typeof sku.price === "number"
+    && Number.isFinite(sku.price)
+    && sku.price >= 0
+    && typeof sku.stock === "number"
+    && Number.isFinite(sku.stock)
+    && sku.stock >= 0
+    && (sku.status === "enabled" || sku.status === "disabled");
+}
+
+function isProductBatchUpdateInput(value: unknown): value is ProductBatchUpdateInput {
+  if (!value || typeof value !== "object") return false;
+  const input = value as Partial<ProductBatchUpdateInput>;
+  if (!Array.isArray(input.ids) || !input.ids.length || !input.ids.every((id) => typeof id === "string" && id.length > 0)) return false;
+  if (input.field === "status") return isProductStatus(input.value);
+  return input.field === "category" && typeof input.value === "string" && input.value.trim().length > 0 && Array.isArray(input.categoryPath) && input.categoryPath.every((item) => typeof item === "string");
+}
+
+function saveProduct(product: ProductDetail): void {
+  const index = database.products.findIndex((item) => item.id === product.id);
+  if (index >= 0) database.products.splice(index, 1, product);
+  else database.products.unshift(product);
+  persistCollection("products", database.products);
+}
+
+function createImportedProduct(fileName: string): ProductDetail {
+  const id = createId("product");
+  const safeName = fileName.replace(/\.[^.]+$/, "").trim() || "批量导入商品";
+  return {
+    id,
+    name: `${safeName}·导入商品`,
+    category: "待分类",
+    categoryPath: ["all-products", "unclassified"],
+    brand: "待补充",
+    highlights: ["已通过导入创建", "待完善商品资料"],
+    status: "draft",
+    coverTone: "blue",
+    media: [],
+    description: "<p>此商品由批量导入创建，请补充商品图片、详情与 SKU 信息。</p>",
+    specifications: [{ id: `${id}-spec-default`, name: "规格", values: ["默认规格"] }],
+    skus: [{ id: `${id}-sku-default`, specValues: ["默认规格"], sku: `IMPORT-${Date.now().toString().slice(-6)}`, barcode: "", price: 0, stock: 0, status: "disabled" }],
+    sales: 0,
+    updatedAt: getCurrentTimeLabel(),
+  };
 }
 
 /** 导出与列表复用同一组筛选字段，避免生成文件与当前查询结果不一致。 */
@@ -647,6 +821,61 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     case "get /system/menus":
       response = createPageResponse(database.menus, config, ["name", "path", "permission", "status"], "获取菜单列表成功");
       break;
+    case "get /business/products":
+      response = getProductListResponse(config);
+      break;
+    case "post /business/products": {
+      const payload = getRequestData<Partial<ProductSaveInput>>(config);
+      if (!isProductSaveInput(payload)) {
+        response = createErrorResponse("商品基础信息、素材或 SKU 数据不完整，请检查后重试。");
+        break;
+      }
+      const product = normalizeProductInput(payload, createId("product"));
+      saveProduct(product);
+      response = createSuccessResponse(product, "新建商品成功");
+      break;
+    }
+    case "patch /business/products/batch": {
+      const payload = getRequestData<unknown>(config);
+      if (!isProductBatchUpdateInput(payload)) {
+        response = createErrorResponse("批量更新参数无效，请重新选择商品与目标值。");
+        break;
+      }
+      const selectedIds = new Set(payload.ids);
+      const matchedProducts = database.products.filter((item) => selectedIds.has(item.id));
+      if (!matchedProducts.length) {
+        response = createErrorResponse("未找到可更新的商品，请刷新列表后重试。", 404);
+        break;
+      }
+      matchedProducts.forEach((product) => {
+        if (payload.field === "status") product.status = payload.value;
+        else {
+          product.category = payload.value.trim();
+          product.categoryPath = payload.categoryPath.map((item) => item.trim()).filter(Boolean);
+        }
+        product.updatedAt = getCurrentTimeLabel();
+      });
+      persistCollection("products", database.products);
+      response = createSuccessResponse(matchedProducts.map(toProductRecord), "批量更新商品成功");
+      break;
+    }
+    case "post /business/products/import": {
+      const file = getUploadedFile(config);
+      if (!file) {
+        response = createErrorResponse("未找到需要导入的商品文件。");
+        break;
+      }
+      const importedProduct = createImportedProduct(file.name);
+      saveProduct(importedProduct);
+      response = createSuccessResponse({ importedCount: 1, productIds: [importedProduct.id] }, "商品文件已导入，请补充商品资料后发布。");
+      break;
+    }
+    case "get /business/products/export": {
+      const query = config.params as ProductListQuery;
+      const records = filterProducts(database.products.map(toProductRecord), { ...config, params: query });
+      response = createSuccessResponse(records, "导出商品数据成功");
+      break;
+    }
     case "get /business/orders":
       response = createPageResponse(orders, config, ["orderNo", "customerName", "productSummary", "channel", "status", "createdAt", "amount"], "获取订单列表成功", filterOrders);
       break;
@@ -696,6 +925,7 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       const orderExportTaskRetryMatch = method === "post" ? config.url?.match(/^\/business\/orders\/export-tasks\/([^/]+)\/retry$/) : null;
       const orderExportTaskRemoveMatch = method === "delete" ? config.url?.match(/^\/business\/orders\/export-tasks\/([^/]+)$/) : null;
       const orderIdMatch = method === "get" ? config.url?.match(/^\/business\/orders\/([^/]+)$/) : null;
+      const productIdMatch = (method === "get" || method === "put") ? config.url?.match(/^\/business\/products\/([^/]+)$/) : null;
       if (chunkUploadPartMatch) {
         const fileKey = getFormDataValue(config, "fileKey");
         const totalChunks = Number(getFormDataValue(config, "totalChunks"));
@@ -727,6 +957,23 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       } else if (orderIdMatch) {
         const order = orders.find((item) => item.id === decodeURIComponent(orderIdMatch[1]));
         response = order ? createSuccessResponse(cloneData(order), "获取订单详情成功") : createErrorResponse("未找到对应的订单。", 404);
+      } else if (productIdMatch) {
+        const productId = decodeURIComponent(productIdMatch[1]);
+        const product = database.products.find((item) => item.id === productId);
+        if (!product) {
+          response = createErrorResponse("未找到对应的商品。", 404);
+        } else if (method === "get") {
+          response = createSuccessResponse(cloneData(product), "获取商品详情成功");
+        } else {
+          const payload = getRequestData<Partial<ProductSaveInput>>(config);
+          if (!isProductSaveInput(payload)) {
+            response = createErrorResponse("商品基础信息、素材或 SKU 数据不完整，请检查后重试。");
+          } else {
+            const nextProduct = normalizeProductInput(payload, product.id, product);
+            saveProduct(nextProduct);
+            response = createSuccessResponse(nextProduct, "更新商品成功");
+          }
+        }
       } else {
         response = createErrorResponse("请求的资源不存在。", 404);
       }
