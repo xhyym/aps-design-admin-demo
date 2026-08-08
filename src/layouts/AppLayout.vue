@@ -17,7 +17,7 @@ import { AppPopover } from "aps-design-pro";
 import { AppRadioGroup } from "aps-design-pro";
 import { AppSwitch } from "aps-design-pro";
 import { AppTooltip } from "aps-design-pro";
-import { useAppStore } from "@/stores/app";
+import { useAppStore, type Accent } from "@/stores/app";
 import { useAuthStore } from "@/stores/auth";
 import { useFeedbackStore } from "@/stores/feedback";
 import { useTabsStore, type AppTab } from "@/stores/tabs";
@@ -41,7 +41,7 @@ const appStore = useAppStore();
 const authStore = useAuthStore();
 const feedbackStore = useFeedbackStore();
 const tabsStore = useTabsStore();
-const { sidebarCollapsed, sidebarWidth, sidebarMenuStyle, density, fontScale, theme } = storeToRefs(appStore);
+const { sidebarCollapsed, sidebarWidth, sidebarMenuStyle, density, fontScale, theme, accent } = storeToRefs(appStore);
 const { tabs } = storeToRefs(tabsStore);
 const isSearchOpen = ref(false);
 const isNotificationOpen = ref(false);
@@ -96,6 +96,13 @@ const userMenuItems: DropdownItem[] = [
 const themeOptions: RadioOption[] = [
   { label: "浅色", value: "light", description: "中性明亮的默认界面" },
   { label: "深色", value: "dark", description: "适合低光环境与长时间使用" },
+];
+const accentOptions: RadioOption[] = [
+  { label: "蓝", value: "blue", description: "默认主题，适合通用后台" },
+  { label: "绿", value: "green", description: "沉稳、效率与增长" },
+  { label: "橙", value: "orange", description: "运营与提醒场景" },
+  { label: "紫", value: "purple", description: "品牌与科技感" },
+  { label: "青", value: "teal", description: "数据与技术场景" },
 ];
 const fontScaleOptions: RadioOption[] = [
   { label: "小", value: "small", description: "13 px 基准字号" },
@@ -369,6 +376,12 @@ function updateTheme(value: string): void {
   if (value === "light" || value === "dark") appStore.setTheme(value);
 }
 
+function updateAccent(value: string): void {
+  if (value === "blue" || value === "green" || value === "orange" || value === "purple" || value === "teal") {
+    appStore.setAccent(value as Accent);
+  }
+}
+
 function updateFontScale(value: string): void {
   if (value === "small" || value === "default" || value === "large") appStore.setFontScale(value);
 }
@@ -548,7 +561,17 @@ onBeforeUnmount(() => {
 
     <AppDrawer v-model="isSettingsOpen" title="偏好设置" description="设置自动保存在当前设备，并即时作用于所有页面。">
       <div class="settings-stack">
-        <section class="settings-section"><h3>外观</h3><AppRadioGroup name="theme" :model-value="theme" :options="themeOptions" direction="vertical" appearance="cards" @update:model-value="updateTheme" /></section>
+        <section class="settings-section theme-appearance-section">
+          <h3>主题外观</h3>
+          <div class="theme-preference-group">
+            <strong>明暗模式</strong>
+            <AppRadioGroup name="theme" :model-value="theme" :options="themeOptions" direction="vertical" appearance="cards" @update:model-value="updateTheme" />
+          </div>
+          <div class="theme-preference-group">
+            <strong>主题色</strong>
+            <AppRadioGroup name="accent" :model-value="accent" :options="accentOptions" direction="vertical" appearance="cards" @update:model-value="updateAccent" />
+          </div>
+        </section>
         <section class="settings-section"><h3>字体大小</h3><AppRadioGroup name="font-scale" :model-value="fontScale" :options="fontScaleOptions" direction="vertical" appearance="cards" @update:model-value="updateFontScale" /></section>
         <section class="settings-section"><h3>内容密度</h3><AppRadioGroup name="density" :model-value="density" :options="densityOptions" direction="vertical" appearance="cards" @update:model-value="updateDensity" /></section>
         <section class="settings-section"><h3>侧边栏</h3><AppRadioGroup name="sidebar-width" :model-value="sidebarWidth" :options="sidebarWidthOptions" direction="vertical" appearance="cards" @update:model-value="updateSidebarWidth" /><div class="sidebar-menu-style"><strong>菜单展开</strong><AppRadioGroup name="sidebar-menu-style" :model-value="sidebarMenuStyle" :options="sidebarMenuStyleOptions" @update:model-value="updateSidebarMenuStyle" /></div><div class="sidebar-setting"><AppSwitch :model-value="sidebarCollapsed" label="收起导航文字" :description="sidebarCollapsed ? '当前仅显示导航图标。' : '当前显示完整导航文字。'" @update:model-value="appStore.setSidebarCollapsed" /></div></section>
@@ -647,6 +670,10 @@ onBeforeUnmount(() => {
 .settings-section { display: grid; gap: 10px; }
 .settings-section h3, .settings-section p { margin: 0; }
 .settings-section h3 { color: var(--aps-ink); font-size: var(--aps-text-sm); font-weight: 700; }
+.theme-appearance-section { gap: 16px; }
+.theme-preference-group { display: grid; gap: 8px; }
+.theme-preference-group + .theme-preference-group { padding-top: 16px; border-top: 1px solid var(--aps-line-soft); }
+.theme-preference-group > strong { color: var(--aps-muted); font-size: var(--aps-text-xs); font-weight: 680; }
 .sidebar-menu-style { display: grid; gap: 8px; padding-top: 16px; border-top: 1px solid var(--aps-line-soft); }.sidebar-menu-style > strong { color: var(--aps-ink); font-size: var(--aps-text-sm); font-weight: 680; }.sidebar-setting { padding-top: 16px; border-top: 1px solid var(--aps-line-soft); }
 .is-sidebar-collapsed .app-sidebar { padding-right: 10px; padding-left: 10px; }
 .is-sidebar-collapsed .brand-area { padding: 0 4px; }

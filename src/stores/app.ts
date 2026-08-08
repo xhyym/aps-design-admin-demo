@@ -5,7 +5,8 @@ export type Density = "comfortable" | "compact";
 export type FontScale = "small" | "default" | "large";
 export type SidebarWidth = "narrow" | "default" | "wide";
 export type SidebarMenuStyle = "smooth" | "compact" | "instant";
-type Theme = "light" | "dark";
+export type Theme = "light" | "dark";
+export type Accent = "blue" | "green" | "orange" | "purple" | "teal";
 
 /** 管理可持久化的界面偏好，确保布局与业务状态彼此独立。 */
 export const useAppStore = defineStore("app", () => {
@@ -15,6 +16,7 @@ export const useAppStore = defineStore("app", () => {
   const density = ref<Density>(readDensityPreference());
   const fontScale = ref<FontScale>(readFontScalePreference());
   const theme = ref<Theme>(readThemePreference());
+  const accent = ref<Accent>(readAccentPreference());
 
   watch(sidebarCollapsed, (value) => localStorage.setItem("aps-sidebar-collapsed", String(value)));
   watch(sidebarWidth, (value) => localStorage.setItem("aps-sidebar-width", value));
@@ -30,6 +32,10 @@ export const useAppStore = defineStore("app", () => {
   watch(theme, (value) => {
     localStorage.setItem("aps-theme", value);
     document.documentElement.dataset.theme = value;
+  }, { immediate: true });
+  watch(accent, (value) => {
+    localStorage.setItem("aps-accent", value);
+    document.documentElement.dataset.accent = value;
   }, { immediate: true });
 
   function toggleSidebar(): void {
@@ -60,6 +66,10 @@ export const useAppStore = defineStore("app", () => {
     theme.value = nextTheme;
   }
 
+  function setAccent(nextAccent: Accent): void {
+    accent.value = nextAccent;
+  }
+
   return {
     sidebarCollapsed,
     sidebarWidth,
@@ -67,6 +77,7 @@ export const useAppStore = defineStore("app", () => {
     density,
     fontScale,
     theme,
+    accent,
     toggleSidebar,
     setSidebarCollapsed,
     setSidebarWidth,
@@ -74,6 +85,7 @@ export const useAppStore = defineStore("app", () => {
     setDensity,
     setFontScale,
     setTheme,
+    setAccent,
   };
 });
 
@@ -103,4 +115,9 @@ function readFontScalePreference(): FontScale {
 
 function readThemePreference(): Theme {
   return localStorage.getItem("aps-theme") === "dark" ? "dark" : "light";
+}
+
+function readAccentPreference(): Accent {
+  const savedValue = localStorage.getItem("aps-accent");
+  return savedValue === "green" || savedValue === "orange" || savedValue === "purple" || savedValue === "teal" ? savedValue : "blue";
 }

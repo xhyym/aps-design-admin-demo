@@ -542,7 +542,7 @@ onMounted(() => {
           <AppFormField label="商品状态" for="product-status"><AppSelect id="product-status" v-model="draft.status" :options="PRODUCT_STATUS_OPTIONS" aria-label="选择商品状态" /></AppFormField>
           <AppFormField label="卖点标签" for="product-highlights" description="用于列表与商品页的快速说明，最多 8 个。" class="form-span-two"><AppInputTag id="product-highlights" v-model="draft.highlights" :max="8" :max-length="16" add-on-blur placeholder="输入卖点后按回车" /></AppFormField>
           <AppFormField label="起售价参考" for="product-reference-price" description="实际成交价由 SKU 售价决定。"><AppNumberInput id="product-reference-price" :model-value="draft.skus[0]?.price ?? 0" :min="0" :step="0.01" aria-label="设置默认 SKU 售价" @update:model-value="draft.skus[0] && (draft.skus[0].price = $event)" /></AppFormField>
-          <AppFormField label="封面色调" for="product-cover-tone"><AppSelect id="product-cover-tone" v-model="draft.coverTone" :options="COVER_TONE_OPTIONS" aria-label="选择商品封面色调" /></AppFormField>
+          <AppFormField label="封面色调" for="product-cover-tone" description="用于商品卡片与列表的视觉标识。"><AppSelect id="product-cover-tone" v-model="draft.coverTone" :options="COVER_TONE_OPTIONS" aria-label="选择商品封面色调" /></AppFormField>
         </div>
       </AppCard>
 
