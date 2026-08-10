@@ -3,11 +3,84 @@ import type {
   InventoryRecord,
   MemberRecord,
   OperationsDashboardData,
+  ProductCategory,
   ProductCoverTone,
   ProductDetail,
   ProductSku,
   RefundRecord,
+  SpecificationTemplate,
 } from "@/types/ecommerce";
+
+/** 商品分类与商品通过 code 建立稳定引用，改名不会影响已归类商品。 */
+export const productCategories: ProductCategory[] = [
+  { id: "category-001", name: "咖啡器具", code: "coffee-tools", parentCode: "all-products", status: "enabled", sortOrder: 10, createdAt: "2026-06-12 09:30", updatedAt: "今天 10:32" },
+  { id: "category-002", name: "即饮咖啡", code: "ready-to-drink", parentCode: "all-products", status: "enabled", sortOrder: 20, createdAt: "2026-06-12 09:32", updatedAt: "今天 09:18" },
+  { id: "category-003", name: "咖啡豆", code: "coffee-beans", parentCode: "all-products", status: "enabled", sortOrder: 30, createdAt: "2026-06-12 09:34", updatedAt: "昨天 15:08" },
+  { id: "category-004", name: "礼盒", code: "gift-boxes", parentCode: "all-products", status: "enabled", sortOrder: 40, createdAt: "2026-06-12 09:36", updatedAt: "2026-08-01 16:40" },
+  { id: "category-005", name: "生活方式", code: "lifestyle", parentCode: "all-products", status: "enabled", sortOrder: 50, createdAt: "2026-06-12 09:38", updatedAt: "2026-07-31 11:22" },
+  { id: "category-006", name: "待分类", code: "unclassified", parentCode: "all-products", status: "enabled", sortOrder: 99, createdAt: "2026-06-12 09:40", updatedAt: "2026-06-12 09:40" },
+];
+
+/** 规格模板演示数据覆盖常见的单项、多项和草稿场景，供 CRUD 与商品编辑联调使用。 */
+export const specificationTemplates: SpecificationTemplate[] = [
+  {
+    id: "spec-template-001",
+    name: "咖啡豆规格",
+    code: "coffee-bean-v2",
+    description: "用于咖啡豆重量、烘焙度和风味的标准化配置。",
+    attributes: [
+      { id: "coffee-bean-weight", name: "重量", values: ["250g", "500g", "1kg"] },
+      { id: "coffee-bean-roast", name: "烘焙度", values: ["浅烘", "中烘", "深烘"] },
+      { id: "coffee-bean-flavor", name: "风味", values: ["坚果可可", "花香果调"] },
+    ],
+    productCount: 38,
+    status: "enabled",
+    createdAt: "2026-06-12 09:10",
+    updatedAt: "今天 08:48",
+  },
+  {
+    id: "spec-template-002",
+    name: "服饰尺码",
+    code: "apparel-size",
+    description: "服饰类商品统一使用的颜色与尺码选项。",
+    attributes: [
+      { id: "apparel-color", name: "颜色", values: ["黑色", "白色", "卡其色"] },
+      { id: "apparel-size", name: "尺码", values: ["S", "M", "L", "XL"] },
+    ],
+    productCount: 74,
+    status: "enabled",
+    createdAt: "2026-06-14 15:20",
+    updatedAt: "昨天 16:30",
+  },
+  {
+    id: "spec-template-003",
+    name: "礼盒组合",
+    code: "gift-combo",
+    description: "礼盒组合内容与包装规格，发布前可继续调整。",
+    attributes: [
+      { id: "gift-combo-size", name: "组合规格", values: ["单盒", "双盒", "三盒"] },
+      { id: "gift-combo-card", name: "贺卡", values: ["不需要", "生日快乐", "感谢有你"] },
+    ],
+    productCount: 12,
+    status: "draft",
+    createdAt: "2026-07-01 11:05",
+    updatedAt: "昨天 13:11",
+  },
+  {
+    id: "spec-template-004",
+    name: "仓配属性",
+    code: "fulfillment",
+    description: "仓配场景下的保质期、配送温层等属性。",
+    attributes: [
+      { id: "fulfillment-shelf-life", name: "保质期", values: ["6个月", "12个月", "24个月"] },
+      { id: "fulfillment-temperature", name: "配送温层", values: ["常温", "冷藏", "冷冻"] },
+    ],
+    productCount: 96,
+    status: "enabled",
+    createdAt: "2026-07-03 09:40",
+    updatedAt: "周一 09:42",
+  },
+];
 
 /**
  * 电商演示数据只用于前端能力验证，不对应真实订单、商品或会员资料。
@@ -94,11 +167,26 @@ export const productDetails: ProductDetail[] = productSeeds.map((seed) => ({
 }));
 
 export const refunds: RefundRecord[] = [
-  { id: "refund-001", refundNo: "RF-20260803-0008", orderNo: "SO-20260803-0318", memberName: "陈一然", reason: "商品破损", amount: 128, status: "pending", requestedAt: "今天 10:26" },
-  { id: "refund-002", refundNo: "RF-20260803-0007", orderNo: "SO-20260803-0309", memberName: "周予安", reason: "发货超时", amount: 269, status: "reviewing", requestedAt: "今天 09:42" },
-  { id: "refund-003", refundNo: "RF-20260802-0015", orderNo: "SO-20260802-0286", memberName: "宋知夏", reason: "少件漏发", amount: 96, status: "approved", requestedAt: "昨天 16:11" },
-  { id: "refund-004", refundNo: "RF-20260802-0011", orderNo: "SO-20260802-0268", memberName: "许言", reason: "不喜欢", amount: 159, status: "completed", requestedAt: "昨天 11:25" },
-  { id: "refund-005", refundNo: "RF-20260801-0029", orderNo: "SO-20260801-0211", memberName: "姜澄", reason: "已拆封使用", amount: 319, status: "rejected", requestedAt: "2026-08-01 17:06" },
+  {
+    id: "refund-001", refundNo: "RF-20260803-0008", orderNo: "SO-20260803-0318", memberName: "陈一然", memberPhone: "138****4206", productName: "云岚手冲咖啡礼盒", refundType: "return_refund", reason: "商品破损", reasonDetail: "开箱后发现手冲壶壶身有明显磕碰。", amount: 128, status: "pending", requestedAt: "今天 10:26",
+    timeline: [{ time: "今天 10:26", title: "提交退款申请", description: "客户提交退货退款申请，等待审核。" }],
+  },
+  {
+    id: "refund-002", refundNo: "RF-20260803-0007", orderNo: "SO-20260803-0309", memberName: "周予安", memberPhone: "156****8301", productName: "山野冷萃咖啡液 12 瓶", refundType: "refund_only", reason: "发货超时", reasonDetail: "订单超过承诺发货时间仍未出库。", amount: 269, status: "reviewing", requestedAt: "今天 09:42",
+    timeline: [{ time: "今天 09:42", title: "提交退款申请", description: "客户提交仅退款申请，已进入人工审核。" }],
+  },
+  {
+    id: "refund-003", refundNo: "RF-20260802-0015", orderNo: "SO-20260802-0286", memberName: "宋知夏", memberPhone: "188****0938", productName: "深烘拼配挂耳咖啡 20 包", refundType: "refund_only", reason: "少件漏发", reasonDetail: "收到包裹后少了 4 包挂耳咖啡。", amount: 96, status: "approved", requestedAt: "昨天 16:11", reviewerName: "林知远", reviewedAt: "昨天 16:25", auditRemark: "仓库核实后同意补偿。",
+    timeline: [{ time: "昨天 16:25", title: "审核通过", description: "审核员林知远同意退款，等待财务原路退回。" }, { time: "昨天 16:11", title: "提交退款申请", description: "客户提交仅退款申请。" }],
+  },
+  {
+    id: "refund-004", refundNo: "RF-20260802-0011", orderNo: "SO-20260802-0268", memberName: "许言", memberPhone: "139****6005", productName: "旅行随行保温杯", refundType: "return_refund", reason: "不喜欢", reasonDetail: "商品未使用，客户申请七天无理由退货。", amount: 159, status: "completed", requestedAt: "昨天 11:25", reviewerName: "苏禾", reviewedAt: "昨天 11:36", completedAt: "昨天 12:18", auditRemark: "符合七天无理由退货条件。",
+    timeline: [{ time: "昨天 12:18", title: "退款完成", description: "退款已原路退回客户账户。" }, { time: "昨天 11:36", title: "审核通过", description: "审核员苏禾同意退货退款。" }, { time: "昨天 11:25", title: "提交退款申请", description: "客户提交退货退款申请。" }],
+  },
+  {
+    id: "refund-005", refundNo: "RF-20260801-0029", orderNo: "SO-20260801-0211", memberName: "姜澄", memberPhone: "186****7410", productName: "埃塞俄比亚日晒豆 250g", refundType: "refund_only", reason: "已拆封使用", reasonDetail: "客户已拆封并使用部分商品，不符合无理由退款规则。", amount: 319, status: "rejected", requestedAt: "2026-08-01 17:06", reviewerName: "陈婉", reviewedAt: "2026-08-01 17:22", auditRemark: "商品已拆封使用，暂不满足退款条件。",
+    timeline: [{ time: "2026-08-01 17:22", title: "审核驳回", description: "审核员陈婉驳回退款申请。" }, { time: "2026-08-01 17:06", title: "提交退款申请", description: "客户提交仅退款申请。" }],
+  },
 ];
 
 export const members: MemberRecord[] = [

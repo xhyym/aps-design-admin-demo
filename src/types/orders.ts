@@ -1,6 +1,7 @@
 import type { PageResult, SortOrder } from "./api";
 
 export type OrderStatus = "pending_payment" | "paid" | "fulfilling" | "shipped" | "completed" | "cancelled";
+export type OrderStatusAction = "remind_payment" | "cancel" | "start_fulfillment" | "mark_shipped" | "complete";
 
 export interface OrderItem {
   id: string;
@@ -34,10 +35,19 @@ export interface SalesOrder {
   timeline: OrderTimelineItem[];
 }
 
+export interface OrderStatusActionInput {
+  action: OrderStatusAction;
+  note?: string;
+}
+
 export interface OrderListQuery {
   keyword?: string;
   status?: OrderStatus;
   channel?: string;
+  createdFrom?: string;
+  createdTo?: string;
+  minAmount?: number;
+  maxAmount?: number;
   page?: number;
   pageSize?: number;
   sortBy?: "createdAt" | "amount";

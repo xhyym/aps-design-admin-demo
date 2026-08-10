@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
-import { getOrder } from "@/api/modules/orders";
+import { getOrder, updateOrderStatus } from "@/api/modules/orders";
+import { useFeedbackStore } from "@/stores/feedback";
 import { AppButton } from "aps-design-pro";
 import { AppCard } from "aps-design-pro";
 import { AppTimeline } from "aps-design-pro";
@@ -10,8 +11,9 @@ import { AppIcon } from "aps-design-pro";
 import { AppLoadingState } from "aps-design-pro";
 import { AppStatePanel } from "aps-design-pro";
 import { AppStatusTag } from "aps-design-pro";
+import { AppPopconfirm } from "aps-design-pro";
 import type { DescriptionItem, StatusTone, TimelineItem, TimelineItemState } from "aps-design-pro";
-import type { OrderStatus, SalesOrder } from "@/types/orders";
+import type { OrderStatus, OrderStatusAction, SalesOrder } from "@/types/orders";
 
 interface OrderStatusDisplay {
   label: string;
@@ -19,9 +21,12 @@ interface OrderStatusDisplay {
 }
 
 const route = useRoute();
+const feedbackStore = useFeedbackStore();
 const order = ref<SalesOrder | null>(null);
 const isLoading = ref(true);
 const errorMessage = ref("");
+const isUpdating = ref(false);
+const isCancelConfirmOpen = ref(false);
 const orderDetails = computed<DescriptionItem[]>(() => order.value ? [
   { label: "客户", value: `${order.value.customerName} · ${order.value.customerPhone}` },
   { label: "订单来源", value: order.value.channel },
@@ -74,12 +79,45 @@ function formatAmount(amount: number): string {
   return new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY", minimumFractionDigits: 2 }).format(amount);
 }
 
+const orderActionLabels: Partial<Record<OrderStatusAction, string>> = {
+  remind_payment: "催付",
+  cancel: "关闭订单",
+  start_fulfillment: "开始履约",
+  mark_shipped: "确认交付",
+  complete: "完成订单",
+};
+
+const availableOrderActions = computed<OrderStatusAction[]>(() => {
+  if (!order.value) return [];
+  const actionMap: Partial<Record<OrderStatus, OrderStatusAction[]>> = {
+    pending_payment: ["remind_payment", "cancel"],
+    paid: ["start_fulfillment"],
+    fulfilling: ["mark_shipped"],
+    shipped: ["complete"],
+  };
+  return actionMap[order.value.status] ?? [];
+});
+
+async function handleOrderStatusAction(action: OrderStatusAction): Promise<void> {
+  if (!order.value || isUpdating.value) return;
+  isUpdating.value = true;
+  try {
+    order.value = await updateOrderStatus(order.value.id, { action });
+    isCancelConfirmOpen.value = false;
+    feedbackStore.show(`订单${orderActionLabels[action]}成功。`, "success");
+  } catch (error) {
+    feedbackStore.show(error instanceof Error ? error.message : `订单${orderActionLabels[action]}失败，请稍后重试。`, "error");
+  } finally {
+    isUpdating.value = false;
+  }
+}
+
 watch(() => route.params.id, () => { void loadOrder(); }, { immediate: true });
 </script>
 
 <template>
   <section class="page-content page-stack">
-    <div class="detail-topbar"><RouterLink class="back-link" to="/trade/orders"><AppIcon name="arrow-left" :size="15" />返回交易订单</RouterLink><AppButton variant="secondary" size="small" leading-icon="refresh" :loading="isLoading" @click="loadOrder">刷新</AppButton></div>
+    <div class="detail-topbar"><RouterLink class="back-link" to="/trade/orders"><AppIcon name="arrow-left" :size="15" />返回交易订单</RouterLink><div class="detail-topbar-actions"><AppButton v-if="availableOrderActions.includes('remind_payment')" variant="secondary" size="small" leading-icon="bell" :disabled="isUpdating" @click="handleOrderStatusAction('remind_payment')">催付</AppButton><AppButton v-if="availableOrderActions.includes('start_fulfillment')" variant="secondary" size="small" leading-icon="arrow-right" :disabled="isUpdating" @click="handleOrderStatusAction('start_fulfillment')">开始履约</AppButton><AppButton v-if="availableOrderActions.includes('mark_shipped')" variant="secondary" size="small" leading-icon="check" :disabled="isUpdating" @click="handleOrderStatusAction('mark_shipped')">确认交付</AppButton><AppButton v-if="availableOrderActions.includes('complete')" variant="secondary" size="small" leading-icon="check" :disabled="isUpdating" @click="handleOrderStatusAction('complete')">完成订单</AppButton><AppPopconfirm v-if="availableOrderActions.includes('cancel')" v-model="isCancelConfirmOpen" title="关闭当前订单？" description="关闭后将停止后续履约流程，订单状态会保留在动态记录中。" confirm-text="关闭订单" danger :is-confirming="isUpdating" @confirm="handleOrderStatusAction('cancel')"><template #trigger="{ toggle }"><AppButton variant="danger" size="small" leading-icon="close" :disabled="isUpdating" @click="toggle">关闭订单</AppButton></template></AppPopconfirm><AppButton variant="secondary" size="small" leading-icon="refresh" :loading="isLoading" :disabled="isUpdating" @click="loadOrder">刷新</AppButton></div></div>
     <AppCard v-if="isLoading" padding="none"><AppLoadingState title="正在加载订单详情" description="正在读取订单、商品与交付记录。" /></AppCard>
     <AppCard v-else-if="errorMessage" padding="none"><AppStatePanel type="error" title="订单详情暂时无法加载" :description="errorMessage" action-text="重新加载" @action="loadOrder" /></AppCard>
     <template v-else-if="order">
@@ -92,5 +130,5 @@ watch(() => route.params.id, () => { void loadOrder(); }, { immediate: true });
 </template>
 
 <style scoped>
-.detail-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }.back-link { display: inline-flex; min-height: 32px; align-items: center; gap: 5px; color: var(--aps-muted); font-size: var(--aps-text-sm); font-weight: 640; }.back-link:hover { color: var(--aps-blue); }.order-overview :deep(.card-content) { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }.order-overview-main p, .order-overview-main h1, .order-overview-main span { margin: 0; }.order-overview-main p { color: var(--aps-muted); font-size: var(--aps-text-sm); }.order-overview-main h1 { margin-top: 6px; color: var(--aps-ink); font-size: 24px; font-weight: 730; letter-spacing: -.035em; }.order-overview-main span { display: block; margin-top: 8px; color: var(--aps-muted); font-size: var(--aps-text-sm); }.order-overview-status { display: grid; justify-items: end; gap: 11px; }.order-overview-status strong { color: var(--aps-ink); font-size: 24px; font-weight: 730; font-variant-numeric: tabular-nums; }.detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--aps-page-stack-gap); }.section-heading h2, .section-heading p { margin: 0; }.section-heading h2, .item-heading h2 { color: var(--aps-ink); font-size: var(--aps-text-lg); font-weight: 710; letter-spacing: -.02em; }.section-heading p { margin-top: 5px; color: var(--aps-muted); font-size: var(--aps-text-sm); }.section-heading + :deep(.app-descriptions), .section-heading + :deep(.app-timeline) { margin-top: 22px; }.item-heading { display: flex; min-height: 62px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 var(--aps-table-cell-padding); border-bottom: 1px solid var(--aps-line); }.item-heading h2 { margin: 0; }.item-heading span { color: var(--aps-muted); font-size: var(--aps-text-sm); }.order-items article { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto 112px; align-items: center; gap: 14px; min-height: 78px; padding: 0 var(--aps-table-cell-padding); border-bottom: 1px solid var(--aps-line-soft); color: var(--aps-muted); font-size: var(--aps-text-sm); }.order-items article:last-child { border-bottom: 0; }.item-symbol { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; background: var(--aps-blue-soft); color: var(--aps-blue); }.item-copy { min-width: 0; }.item-copy strong, .item-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.item-copy strong { color: var(--aps-ink); font-size: var(--aps-text-sm); font-weight: 670; }.item-copy span { margin-top: 3px; color: var(--aps-faint); font-size: var(--aps-text-xs); }.order-items article > strong { color: var(--aps-ink); font-size: var(--aps-text-sm); text-align: right; font-variant-numeric: tabular-nums; }@media (max-width: 760px) { .detail-grid { grid-template-columns: 1fr; }.order-overview :deep(.card-content) { align-items: flex-start; flex-direction: column; }.order-overview-status { justify-items: start; }.order-items article { grid-template-columns: 36px minmax(0, 1fr) auto; }.order-items article > strong { grid-column: 2 / -1; text-align: left; } }
+.detail-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }.detail-topbar-actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }.back-link { display: inline-flex; min-height: 32px; align-items: center; gap: 5px; color: var(--aps-muted); font-size: var(--aps-text-sm); font-weight: 640; }.back-link:hover { color: var(--aps-blue); }.order-overview :deep(.card-content) { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }.order-overview-main p, .order-overview-main h1, .order-overview-main span { margin: 0; }.order-overview-main p { color: var(--aps-muted); font-size: var(--aps-text-sm); }.order-overview-main h1 { margin-top: 6px; color: var(--aps-ink); font-size: 24px; font-weight: 730; letter-spacing: -.035em; }.order-overview-main span { display: block; margin-top: 8px; color: var(--aps-muted); font-size: var(--aps-text-sm); }.order-overview-status { display: grid; justify-items: end; gap: 11px; }.order-overview-status strong { color: var(--aps-ink); font-size: 24px; font-weight: 730; font-variant-numeric: tabular-nums; }.detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--aps-page-stack-gap); }.section-heading h2, .section-heading p { margin: 0; }.section-heading h2, .item-heading h2 { color: var(--aps-ink); font-size: var(--aps-text-lg); font-weight: 710; letter-spacing: -.02em; }.section-heading p { margin-top: 5px; color: var(--aps-muted); font-size: var(--aps-text-sm); }.section-heading + :deep(.app-descriptions), .section-heading + :deep(.app-timeline) { margin-top: 22px; }.item-heading { display: flex; min-height: 62px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 var(--aps-table-cell-padding); border-bottom: 1px solid var(--aps-line); }.item-heading h2 { margin: 0; }.item-heading span { color: var(--aps-muted); font-size: var(--aps-text-sm); }.order-items article { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto 112px; align-items: center; gap: 14px; min-height: 78px; padding: 0 var(--aps-table-cell-padding); border-bottom: 1px solid var(--aps-line-soft); color: var(--aps-muted); font-size: var(--aps-text-sm); }.order-items article:last-child { border-bottom: 0; }.item-symbol { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; background: var(--aps-blue-soft); color: var(--aps-blue); }.item-copy { min-width: 0; }.item-copy strong, .item-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.item-copy strong { color: var(--aps-ink); font-size: var(--aps-text-sm); font-weight: 670; }.item-copy span { margin-top: 3px; color: var(--aps-faint); font-size: var(--aps-text-xs); }.order-items article > strong { color: var(--aps-ink); font-size: var(--aps-text-sm); text-align: right; font-variant-numeric: tabular-nums; }@media (max-width: 760px) { .detail-topbar { align-items: flex-start; flex-direction: column; }.detail-topbar-actions { width: 100%; justify-content: flex-start; }.detail-grid { grid-template-columns: 1fr; }.order-overview :deep(.card-content) { align-items: flex-start; flex-direction: column; }.order-overview-status { justify-items: start; }.order-items article { grid-template-columns: 36px minmax(0, 1fr) auto; }.order-items article > strong { grid-column: 2 / -1; text-align: left; } }
 </style>

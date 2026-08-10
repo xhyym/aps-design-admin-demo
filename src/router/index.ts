@@ -51,7 +51,10 @@ const ImageCropperView = () => import("@/views/examples/ImageCropperView.vue");
 const ImageViewerView = () => import("@/views/examples/ImageViewerView.vue");
 const OrdersView = () => import("@/views/business/OrdersView.vue");
 const OrderDetailView = () => import("@/views/business/OrderDetailView.vue");
+const OrderExportTasksView = () => import("@/views/business/OrderExportTasksView.vue");
 const ProductsView = () => import("@/views/business/ProductsView.vue");
+const ProductCategoriesView = () => import("@/views/business/ProductCategoriesView.vue");
+const ProductAttributesView = () => import("@/views/business/ProductAttributesView.vue");
 const AfterSalesView = () => import("@/views/business/AfterSalesView.vue");
 const MembersView = () => import("@/views/business/MembersView.vue");
 const MarketingView = () => import("@/views/business/MarketingView.vue");
@@ -90,13 +93,13 @@ const routes: RouteRecordRaw[] = [
       { path: "profile", name: "profile", component: ProfileView, meta: { title: "个人中心", icon: "user", keepAlive: true, cacheName: "ProfileView" } },
       { path: "trade/orders", name: "orders", component: OrdersView, meta: { title: "交易订单", icon: "chart", permission: "business:order:read", keepAlive: true, cacheName: "OrdersView" } },
       { path: "trade/orders/:id", name: "order-detail", component: OrderDetailView, meta: { title: "订单详情", icon: "chart", permission: "business:order:read" } },
-      { path: "trade/export-tasks", name: "order-exports", component: CommerceScenarioView, props: { scenario: "order-exports" }, meta: { title: "导出任务", icon: "download", permission: "business:order:read" } },
+      { path: "trade/export-tasks", name: "order-exports", component: OrderExportTasksView, meta: { title: "导出任务", icon: "download", permission: "business:order:read" } },
       { path: "products/catalog", name: "products", component: ProductsView, meta: { title: "商品与 SKU", icon: "grid", permission: "business:product:read", keepAlive: true, cacheName: "ProductsView" } },
       /* 编辑流程统一由商品列表中的 AppDialog 承载，旧地址保留重定向避免历史页签进入废弃的独立页面。 */
       { path: "products/catalog/create", redirect: "/products/catalog" },
       { path: "products/catalog/:id/edit", redirect: "/products/catalog" },
-      { path: "products/categories", name: "product-categories", component: CommerceScenarioView, props: { scenario: "product-categories" }, meta: { title: "分类与品牌", icon: "menu", permission: "business:product:read" } },
-      { path: "products/attributes", name: "product-attributes", component: CommerceScenarioView, props: { scenario: "product-attributes" }, meta: { title: "规格模板", icon: "edit", permission: "business:product:read" } },
+      { path: "products/categories", name: "product-categories", component: ProductCategoriesView, meta: { title: "分类与品牌", icon: "menu", permission: "business:product:read" } },
+      { path: "products/attributes", name: "product-attributes", component: ProductAttributesView, meta: { title: "规格模板", icon: "edit", permission: "business:product:read" } },
       { path: "after-sales/refunds", name: "refunds", component: AfterSalesView, meta: { title: "退款与售后", icon: "refresh", permission: "business:refund:read", keepAlive: true, cacheName: "AfterSalesView" } },
       { path: "after-sales/tickets", name: "after-sales-tickets", component: CommerceScenarioView, props: { scenario: "after-sales-tickets" }, meta: { title: "售后工单", icon: "bell", permission: "business:refund:read" } },
       { path: "members/list", name: "members", component: MembersView, meta: { title: "会员中心", icon: "users", permission: "business:member:read", keepAlive: true, cacheName: "MembersView" } },

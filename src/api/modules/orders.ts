@@ -1,6 +1,6 @@
 import { request } from "../client";
 import type { ExportTask } from "aps-design-pro";
-import type { OrderExportQuery, OrderListQuery, OrderPageResult, SalesOrder } from "@/types/orders";
+import type { OrderExportQuery, OrderListQuery, OrderPageResult, OrderStatusActionInput, SalesOrder } from "@/types/orders";
 
 /** 订单查询参数保持为稳定基础类型，后端替换时页面无需改变状态结构。 */
 export function getOrders(query: OrderListQuery): Promise<OrderPageResult> {
@@ -9,6 +9,11 @@ export function getOrders(query: OrderListQuery): Promise<OrderPageResult> {
 
 export function getOrder(id: string): Promise<SalesOrder> {
   return request<SalesOrder>({ url: `/business/orders/${encodeURIComponent(id)}`, method: "get" });
+}
+
+/** 静态 demo 通过同一状态操作契约模拟催付、履约和订单关闭，真实服务可直接替换实现。 */
+export function updateOrderStatus(id: string, input: OrderStatusActionInput): Promise<SalesOrder> {
+  return request<SalesOrder>({ url: `/business/orders/${encodeURIComponent(id)}/status`, method: "patch", data: input });
 }
 
 export function exportOrders(query: Omit<OrderListQuery, "page" | "pageSize">): Promise<SalesOrder[]> {

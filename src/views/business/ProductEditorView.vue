@@ -7,6 +7,7 @@ import {
   AppButton,
   AppCard,
   AppCascader,
+  AppConfirmDialog,
   AppDescriptions,
   AppEditableTable,
   AppFormField,
@@ -24,8 +25,8 @@ import {
   AppTableToolbar,
   AppUpload,
 } from "aps-design-pro";
-import { createProduct, getProduct, updateProduct } from "@/api/modules/ecommerce";
-import { uploadFile } from "@/api/modules/files";
+import { createProduct, getProduct, getProductCategoryTree, updateProduct } from "@/api/modules/ecommerce";
+import { imageAssetAdapter } from "@/api/modules/files";
 import { useFeedbackStore } from "@/stores/feedback";
 import type {
   AutocompleteOption,
@@ -46,6 +47,7 @@ import type {
 import type { CropResult } from "aps-design-pro";
 import type {
   ProductDetail,
+  ProductCategoryTreeNode,
   ProductMedia,
   ProductSaveInput,
   ProductSku,
@@ -82,20 +84,6 @@ const PRODUCT_STEP_ITEMS: StepItem[] = [
   { key: "media", title: "商品素材与详情", description: "主图、轮播图与商品描述" },
   { key: "sku", title: "SKU 与库存", description: "规格组合、售价与可售库存" },
   { key: "confirm", title: "发布确认", description: "发布前完整性检查" },
-];
-const CATEGORY_OPTIONS: CascaderOption[] = [
-  {
-    label: "全部商品",
-    value: "all-products",
-    children: [
-      { label: "咖啡器具", value: "coffee-tools", leaf: true },
-      { label: "即饮咖啡", value: "ready-to-drink", leaf: true },
-      { label: "咖啡豆", value: "coffee-beans", leaf: true },
-      { label: "礼盒", value: "gift-boxes", leaf: true },
-      { label: "生活方式", value: "lifestyle", leaf: true },
-      { label: "待分类", value: "unclassified", leaf: true },
-    ],
-  },
 ];
 const BRAND_OPTIONS: AutocompleteOption[] = [
   { key: "north-coast", label: "North Coast Coffee", value: "North Coast Coffee", description: "精品咖啡" },
@@ -136,8 +124,10 @@ const activeStep = ref(0);
 const isLoading = ref(false);
 const isSaving = ref(false);
 const saveError = ref("");
+const categoryOptions = ref<CascaderOption[]>([]);
 const imageFiles = ref<UploadFileItem[]>([]);
 const selectedSkuKeys = ref<Array<string | number>>([]);
+const skuDeleteTarget = ref<ProductSku | null>(null);
 const isImageViewerOpen = ref(false);
 const activeImageIndex = ref(0);
 const cropSource = ref("");
@@ -230,8 +220,24 @@ function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY", minimumFractionDigits: 2 }).format(amount);
 }
 
+/** 商品编辑器与商品列表共用分类服务返回的结构，避免分类维护后级联选择仍显示旧数据。 */
+function toCascaderOption(category: ProductCategoryTreeNode): CascaderOption {
+  return {
+    label: category.status === "disabled" ? `${category.name}（已停用）` : category.name,
+    value: category.code,
+    disabled: category.code !== "all-products" && category.status === "disabled",
+    children: category.children.map(toCascaderOption),
+    leaf: category.children.length === 0,
+  };
+}
+
+async function loadCategoryOptions(): Promise<void> {
+  const categoryTree = await getProductCategoryTree();
+  categoryOptions.value = [toCascaderOption(categoryTree)];
+}
+
 function getCategoryLabel(path: string[]): string {
-  let currentOptions = CATEGORY_OPTIONS;
+  let currentOptions = categoryOptions.value;
   const labels: string[] = [];
   path.forEach((value) => {
     const option = currentOptions.find((item) => item.value === value);
@@ -262,9 +268,9 @@ function syncMediaFromFiles(files: UploadFileItem[]): void {
 }
 
 async function uploadProductImage({ file, signal, onProgress }: UploadRequestOptions): Promise<UploadRequestResult> {
-  const uploadedFile = await uploadFile(file, signal, onProgress);
-  /** 适配器未返回正式地址时，AppUpload 会继续保留当前 blob URL 作为会话内预览。 */
-  return uploadedFile.url ? { url: uploadedFile.url } : {};
+  const uploadedImage = await imageAssetAdapter.uploadImage({ file, signal, onProgress });
+  /** 商品封面和富文本复用同一资产适配器，确保鉴权、签名和资源地址策略始终一致。 */
+  return { url: uploadedImage.url };
 }
 
 function handleImageChange(_file: UploadFileItem, files: UploadFileItem[]): void {
@@ -355,8 +361,45 @@ function createSuggestedSku(specValues: string[], index: number): string {
   return `${productKey}-${specificationKey}-${String(index + 1).padStart(2, "0")}`;
 }
 
+/** 支持无规格商品和临时补货场景直接新增 SKU，保存时仍由商品聚合接口统一提交。 */
+function addSku(): void {
+  if (draft.value.skus.length >= 80) {
+    feedbackStore.show("当前商品最多支持 80 个 SKU。", "warning");
+    return;
+  }
+  const nextIndex = draft.value.skus.length;
+  draft.value.skus.push({
+    id: createLocalId("sku"),
+    specValues: [`自定义规格 ${nextIndex + 1}`],
+    sku: createSuggestedSku(["CUSTOM"], nextIndex),
+    barcode: "",
+    price: draft.value.skus[0]?.price ?? 0,
+    stock: 0,
+    status: "enabled",
+  });
+}
+
+/** SKU 删除先在当前草稿中确认，商品至少保留一条 SKU 以维持库存模型完整。 */
+function confirmRemoveSku(): void {
+  const target = skuDeleteTarget.value;
+  if (!target) return;
+  if (draft.value.skus.length <= 1) {
+    feedbackStore.show("商品至少需要保留一个 SKU。", "warning");
+    skuDeleteTarget.value = null;
+    return;
+  }
+  draft.value.skus = draft.value.skus.filter((sku) => sku.id !== target.id);
+  selectedSkuKeys.value = selectedSkuKeys.value.filter((key) => key !== target.id);
+  skuDeleteTarget.value = null;
+  feedbackStore.show(`SKU“${target.sku}”已从当前草稿移除。`, "success");
+}
+
 function validateSkuCell(context: DataTableEditContext<ProductSku>, value: DataTableEditorValue): string | void {
-  if (context.column.key === "sku" && (!value || !String(value).trim())) return "SKU 编码不能为空。";
+  if (context.column.key === "sku") {
+    const code = String(value ?? "").trim();
+    if (!code) return "SKU 编码不能为空。";
+    if (draft.value.skus.some((sku) => sku.id !== context.row.id && sku.sku.trim().toLocaleUpperCase() === code.toLocaleUpperCase())) return "SKU 编码不能重复。";
+  }
   if ((context.column.key === "price" || context.column.key === "stock") && (typeof value !== "number" || !Number.isFinite(value) || value < 0)) return "请输入大于或等于 0 的数值。";
   return undefined;
 }
@@ -407,6 +450,8 @@ function getValidationErrors(step: number): string[] {
       if (!Number.isFinite(sku.price) || sku.price < 0) errors.push(`第 ${index + 1} 个 SKU 售价无效。`);
       if (!Number.isFinite(sku.stock) || sku.stock < 0) errors.push(`第 ${index + 1} 个 SKU 库存无效。`);
     });
+    const normalizedSkuCodes = draft.value.skus.map((sku) => sku.sku.trim().toLocaleUpperCase()).filter(Boolean);
+    if (new Set(normalizedSkuCodes).size !== normalizedSkuCodes.length) errors.push("SKU 编码不能重复。");
   }
   return [...new Set(errors)];
 }
@@ -470,14 +515,23 @@ async function loadProduct(): Promise<void> {
     saveError.value = "缺少商品标识，无法加载编辑数据。";
     return;
   }
-  isLoading.value = true;
-  saveError.value = "";
   try {
     const product = await getProduct(props.productId);
     draft.value = cloneProductForForm(product);
     imageFiles.value = product.media.map(createUploadFile);
   } catch (error) {
     saveError.value = error instanceof Error ? error.message : "加载商品详情失败，请稍后重试。";
+  }
+}
+
+async function initializeEditor(): Promise<void> {
+  isLoading.value = true;
+  saveError.value = "";
+  try {
+    await loadCategoryOptions();
+    await loadProduct();
+  } catch (error) {
+    saveError.value = error instanceof Error ? error.message : "商品分类加载失败，请稍后重试。";
   } finally {
     isLoading.value = false;
   }
@@ -505,7 +559,7 @@ watch(imageFiles, (files) => {
 }, { deep: true });
 
 onMounted(() => {
-  void loadProduct();
+  void initializeEditor();
 });
 </script>
 
@@ -537,7 +591,7 @@ onMounted(() => {
         <header class="section-heading"><div><h2>基础信息</h2><p>先建立商品的检索、归属和售卖基础，后续素材与 SKU 会共享这份信息。</p></div><span>01 / 04</span></header>
         <div class="form-grid">
           <AppFormField label="商品名称" for="product-name" required :error="draft.name.trim().length > 0 && draft.name.trim().length < 2 ? '至少输入 2 个字符' : ''"><AppInput id="product-name" v-model="draft.name" placeholder="例如：手冲咖啡入门套装" clearable :max-length="60" show-word-limit /></AppFormField>
-          <AppFormField label="商品分类" for="product-category" required :error="draft.categoryPath.length ? '' : '请选择商品分类'"><AppCascader id="product-category" v-model="draft.categoryPath" :options="CATEGORY_OPTIONS" clearable filterable aria-label="选择商品分类" @change="syncCategory" /></AppFormField>
+          <AppFormField label="商品分类" for="product-category" required :error="draft.categoryPath.length ? '' : '请选择商品分类'"><AppCascader id="product-category" v-model="draft.categoryPath" :options="categoryOptions" clearable filterable aria-label="选择商品分类" @change="syncCategory" /></AppFormField>
           <AppFormField label="商品品牌" for="product-brand" required :error="draft.brand.trim() ? '' : '请选择或填写品牌'"><AppAutocomplete id="product-brand" v-model="draft.brand" :options="BRAND_OPTIONS" clearable placeholder="选择已有品牌，或直接输入" /></AppFormField>
           <AppFormField label="商品状态" for="product-status"><AppSelect id="product-status" v-model="draft.status" :options="PRODUCT_STATUS_OPTIONS" aria-label="选择商品状态" /></AppFormField>
           <AppFormField label="卖点标签" for="product-highlights" description="用于列表与商品页的快速说明，最多 8 个。" class="form-span-two"><AppInputTag id="product-highlights" v-model="draft.highlights" :max="8" :max-length="16" add-on-blur placeholder="输入卖点后按回车" /></AppFormField>
@@ -549,7 +603,7 @@ onMounted(() => {
       <AppCard v-else-if="activeStep === 1" as="section" padding="large" class="editor-card">
         <header class="section-heading"><div><h2>商品素材与详情</h2><p>图片将在当前编辑会话内即时预览；接入正式文件服务后可直接返回稳定资源地址。</p></div><span>02 / 04</span></header>
         <div class="media-workspace">
-          <section class="media-panel"><div class="subsection-heading"><div><h3>主图与轮播图</h3><p>第一张图片将作为商品列表缩略图。</p></div><AppButton variant="secondary" size="small" leading-icon="edit" :disabled="!draft.media.length" @click="startCropping">裁剪当前图</AppButton></div><AppUpload v-model="imageFiles" accept="image/*" list-type="picture-card" :limit="8" :request="uploadProductImage" upload-text="上传商品图片" @change="handleImageChange" @preview="previewImage" /><p class="media-hint">建议上传 1:1 或 4:3 图片，单张不超过 10 MB。</p></section>
+          <section class="media-panel"><div class="subsection-heading"><div><h3>主图与轮播图</h3><p>第一张图片将作为商品列表缩略图。</p></div><AppButton variant="secondary" size="small" leading-icon="edit" :disabled="!draft.media.length" @click="startCropping">裁剪当前图</AppButton></div><AppUpload v-model="imageFiles" accept="image/*" list-type="picture-card" :limit="8" :max-size="10 * 1024 * 1024" :request="uploadProductImage" upload-text="上传商品图片" @change="handleImageChange" @preview="previewImage" /><p class="media-hint">建议上传 1:1 或 4:3 图片，单张不超过 10 MB。</p></section>
           <section class="media-panel crop-panel"><div class="subsection-heading"><div><h3>图片裁剪</h3><p>选择当前素材后可裁剪为方形封面。</p></div><AppIconButton v-if="cropSource" icon="close" label="关闭图片裁剪" size="small" @click="cropSource = ''" /></div><AppImageCropper v-if="cropSource" v-model="cropSource" aspect="1 / 1" :output-width="1200" @crop="handleCrop" @error="handleCropError" /><div v-else class="crop-placeholder"><strong>等待选择素材</strong><span>上传图片后，在预览器中选择一张，再开始裁剪。</span></div></section>
         </div>
         <section class="detail-editor"><div class="subsection-heading"><div><h3>商品详情</h3><p>描述支持基础文字强调与列表，避免未经处理的外部 HTML 进入商品展示页。</p></div></div><AppRichTextEditor v-model="draft.description" placeholder="介绍商品特点、使用方式与售后说明" :min-height="220" /></section>
@@ -559,7 +613,7 @@ onMounted(() => {
         <header class="section-heading"><div><h2>SKU 与库存</h2><p>维护规格组合后可直接在单元格中调整价格、库存和售卖状态。</p></div><span>03 / 04</span></header>
         <AppAlert tone="info" title="SKU 生成规则" description="修改规格名称或值后点击“生成 SKU 组合”。系统会保留相同组合已经填写的价格、库存与条码。" />
         <section class="specifications-panel"><header class="subsection-heading"><div><h3>规格配置</h3><p>最多 3 个规格维度，组合总数不超过 80 条。</p></div><div class="specification-actions"><AppButton variant="secondary" size="small" leading-icon="plus" @click="addSpecification">添加规格</AppButton><AppButton size="small" leading-icon="refresh" @click="regenerateSkus">生成 SKU 组合</AppButton></div></header><div class="specification-list"><article v-for="(specification, index) in draft.specifications" :key="specification.id" class="specification-row"><span class="specification-index">{{ String(index + 1).padStart(2, '0') }}</span><AppInput v-model="specification.name" placeholder="规格名称，例如：容量" aria-label="输入规格名称" /><AppInputTag v-model="specification.values" :max="10" :max-length="20" add-on-blur placeholder="输入规格值后按回车" aria-label="输入规格值" /><AppIconButton icon="close" :label="`移除规格 ${index + 1}`" size="small" @click="removeSpecification(specification.id)" /></article></div></section>
-        <section class="sku-table-panel"><AppTableToolbar :selected-count="selectedSkuKeys.length"><template #bulk><AppTableBatchEditor :selected-keys="selectedSkuKeys" :fields="SKU_BATCH_FIELDS" :request="batchUpdateSkus" @success="handleSkuBatchSuccess" @error="handleSkuBatchError" /><AppIconButton icon="close" label="取消选择 SKU" size="small" @click="selectedSkuKeys = []" /></template></AppTableToolbar><AppEditableTable :rows="draft.skus" :columns="SKU_TABLE_COLUMNS" row-key="id" selectable :selected-keys="selectedSkuKeys" show-index resizable striped show-column-dividers :edit-trigger="'click'" :validator="validateSkuCell" @update:selected-keys="selectedSkuKeys = $event" @edit-save="saveSkuCell"><template #display-specValues="{ row }"><span class="sku-spec-values">{{ row.specValues.join(' / ') || '默认规格' }}</span></template><template #display-price="{ row }"><strong class="sku-number">{{ formatCurrency(row.price) }}</strong></template><template #display-stock="{ row }"><strong class="sku-number" :class="{ 'is-low-stock': row.stock < 10 }">{{ row.stock }}</strong></template><template #display-status="{ row }"><AppStatusTag :tone="row.status === 'enabled' ? 'success' : 'neutral'" :label="getSkuStatusLabel(row.status)" /></template></AppEditableTable></section>
+        <section class="sku-table-panel"><AppTableToolbar :selected-count="selectedSkuKeys.length"><AppButton variant="secondary" size="small" leading-icon="plus" @click="addSku">新增 SKU</AppButton><template #bulk><AppTableBatchEditor :selected-keys="selectedSkuKeys" :fields="SKU_BATCH_FIELDS" :request="batchUpdateSkus" @success="handleSkuBatchSuccess" @error="handleSkuBatchError" /><AppIconButton icon="close" label="取消选择 SKU" size="small" @click="selectedSkuKeys = []" /></template></AppTableToolbar><AppEditableTable :rows="draft.skus" :columns="SKU_TABLE_COLUMNS" row-key="id" selectable :selected-keys="selectedSkuKeys" show-index resizable striped show-column-dividers action-label="操作" :edit-trigger="'click'" :validator="validateSkuCell" @update:selected-keys="selectedSkuKeys = $event" @edit-save="saveSkuCell"><template #display-specValues="{ row }"><span class="sku-spec-values">{{ row.specValues.join(' / ') || '默认规格' }}</span></template><template #display-price="{ row }"><strong class="sku-number">{{ formatCurrency(row.price) }}</strong></template><template #display-stock="{ row }"><strong class="sku-number" :class="{ 'is-low-stock': row.stock < 10 }">{{ row.stock }}</strong></template><template #display-status="{ row }"><AppStatusTag :tone="row.status === 'enabled' ? 'success' : 'neutral'" :label="getSkuStatusLabel(row.status)" /></template><template #actions="{ row }"><AppIconButton icon="trash" label="删除 SKU" size="small" variant="danger" @click="skuDeleteTarget = row" /></template></AppEditableTable></section>
       </AppCard>
 
       <AppCard v-else as="section" padding="large" class="editor-card confirm-card">
@@ -574,6 +628,7 @@ onMounted(() => {
     <footer v-if="!embedded" class="editor-footer"><div><AppButton v-if="activeStep > 0" variant="secondary" leading-icon="arrow-left" :disabled="isSaving" @click="goToPreviousStep">上一步</AppButton></div><div class="footer-actions"><AppButton variant="secondary" :loading="isSaving && activeStep !== 3" :disabled="isSaving" @click="saveDraft">保存草稿</AppButton><AppButton v-if="activeStep < PRODUCT_STEP_ITEMS.length - 1" :disabled="isSaving || isLoading" trailing-icon="chevron-right" @click="goToNextStep">下一步</AppButton><AppButton v-else :loading="isSaving" :disabled="isLoading" leading-icon="check" @click="publishProduct">校验并发布</AppButton></div></footer>
 
     <AppImageViewer v-model="isImageViewerOpen" v-model:active-index="activeImageIndex" :items="imageViewerItems" aria-label="商品图片预览" />
+    <AppConfirmDialog :model-value="Boolean(skuDeleteTarget)" title="确认移除 SKU？" :description="`SKU“${skuDeleteTarget?.sku ?? ''}”将在保存商品后永久删除。`" confirm-text="确认移除" danger @update:model-value="skuDeleteTarget = null" @confirm="confirmRemoveSku" />
   </section>
 </template>
 

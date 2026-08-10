@@ -1,5 +1,5 @@
 import { request } from "../client";
-import { campaigns, inventories, members, operationsDashboard, refunds } from "@/mock/ecommerce";
+import { campaigns, inventories, members, operationsDashboard } from "@/mock/ecommerce";
 import type {
   CampaignRecord,
   InventoryListQuery,
@@ -8,6 +8,9 @@ import type {
   MemberPageResult,
   OperationsDashboardData,
   ProductBatchUpdateInput,
+  ProductCategory,
+  ProductCategorySaveInput,
+  ProductCategoryTreeNode,
   ProductDetail,
   ProductImportResult,
   ProductListQuery,
@@ -16,6 +19,13 @@ import type {
   ProductSaveInput,
   RefundListQuery,
   RefundPageResult,
+  RefundRecord,
+  RefundReviewInput,
+  RefundSaveInput,
+  SpecificationTemplate,
+  SpecificationTemplateListQuery,
+  SpecificationTemplatePageResult,
+  SpecificationTemplateSaveInput,
 } from "@/types/ecommerce";
 
 const MOCK_RESPONSE_DELAY = 120;
@@ -36,12 +46,52 @@ export function getProduct(id: string): Promise<ProductDetail> {
   return request<ProductDetail>({ url: `/business/products/${encodeURIComponent(id)}`, method: "get" });
 }
 
+/** 分类树是商品筛选、商品编辑与分类维护的唯一数据源。 */
+export function getProductCategoryTree(): Promise<ProductCategoryTreeNode> {
+  return request<ProductCategoryTreeNode>({ url: "/business/product-categories", method: "get" });
+}
+
+export function createProductCategory(input: ProductCategorySaveInput): Promise<ProductCategory> {
+  return request<ProductCategory>({ url: "/business/product-categories", method: "post", data: input });
+}
+
+export function updateProductCategory(id: string, input: ProductCategorySaveInput): Promise<ProductCategory> {
+  return request<ProductCategory>({ url: `/business/product-categories/${encodeURIComponent(id)}`, method: "put", data: input });
+}
+
+/** 删除前由服务端校验子分类及直接关联商品，避免产生无法追溯的分类引用。 */
+export function removeProductCategory(id: string): Promise<null> {
+  return request<null>({ url: `/business/product-categories/${encodeURIComponent(id)}`, method: "delete" });
+}
+
+/** 规格模板接口保持独立资源契约，页面可直接替换为真实服务地址。 */
+export function getSpecificationTemplates(query: SpecificationTemplateListQuery): Promise<SpecificationTemplatePageResult> {
+  return request<SpecificationTemplatePageResult>({ url: "/business/specification-templates", method: "get", params: query });
+}
+
+export function createSpecificationTemplate(input: SpecificationTemplateSaveInput): Promise<SpecificationTemplate> {
+  return request<SpecificationTemplate>({ url: "/business/specification-templates", method: "post", data: input });
+}
+
+export function updateSpecificationTemplate(id: string, input: SpecificationTemplateSaveInput): Promise<SpecificationTemplate> {
+  return request<SpecificationTemplate>({ url: `/business/specification-templates/${encodeURIComponent(id)}`, method: "put", data: input });
+}
+
+export function removeSpecificationTemplate(id: string): Promise<null> {
+  return request<null>({ url: `/business/specification-templates/${encodeURIComponent(id)}`, method: "delete" });
+}
+
 export function createProduct(input: ProductSaveInput): Promise<ProductDetail> {
   return request<ProductDetail>({ url: "/business/products", method: "post", data: input });
 }
 
 export function updateProduct(id: string, input: ProductSaveInput): Promise<ProductDetail> {
   return request<ProductDetail>({ url: `/business/products/${encodeURIComponent(id)}`, method: "put", data: input });
+}
+
+/** 删除商品使用资源地址表达目标，避免将商品标识混入请求体。 */
+export function removeProduct(id: string): Promise<null> {
+  return request<null>({ url: `/business/products/${encodeURIComponent(id)}`, method: "delete" });
 }
 
 export function batchUpdateProducts(input: ProductBatchUpdateInput): Promise<ProductRecord[]> {
@@ -64,8 +114,27 @@ export function getOperationsDashboard(): Promise<OperationsDashboardData> {
 }
 
 export function getRefunds(query: RefundListQuery): Promise<RefundPageResult> {
-  const filteredRefunds = refunds.filter((item) => !query.status || item.status === query.status);
-  return resolveMockData(createPageResult(filteredRefunds, query, ["refundNo", "orderNo", "memberName", "reason", "requestedAt"])) as Promise<RefundPageResult>;
+  return request<RefundPageResult>({ url: "/business/refunds", method: "get", params: query });
+}
+
+/** 退款申请由客服代客创建，审核状态始终由后续审核接口维护。 */
+export function createRefund(input: RefundSaveInput): Promise<RefundRecord> {
+  return request<RefundRecord>({ url: "/business/refunds", method: "post", data: input });
+}
+
+/** 仅允许修改尚未完成审核的申请信息，防止覆盖已落库的审核结论。 */
+export function updateRefund(id: string, input: RefundSaveInput): Promise<RefundRecord> {
+  return request<RefundRecord>({ url: `/business/refunds/${encodeURIComponent(id)}`, method: "put", data: input });
+}
+
+/** 审核动作以明确语义提交，不开放页面直接写入退款状态。 */
+export function reviewRefund(id: string, input: RefundReviewInput): Promise<RefundRecord> {
+  return request<RefundRecord>({ url: `/business/refunds/${encodeURIComponent(id)}/review`, method: "patch", data: input });
+}
+
+/** 仅待审核或已拒绝记录允许移除，已通过的财务记录必须保留。 */
+export function removeRefund(id: string): Promise<null> {
+  return request<null>({ url: `/business/refunds/${encodeURIComponent(id)}`, method: "delete" });
 }
 
 export function getMembers(query: MemberListQuery): Promise<MemberPageResult> {

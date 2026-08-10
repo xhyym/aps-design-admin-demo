@@ -2,6 +2,7 @@
 import { storeToRefs } from "pinia";
 import { RouterView } from "vue-router";
 import { AppConfigProvider, AppNetworkLoadingOverlay, AppToast } from "aps-design-pro";
+import { imageAssetAdapter } from "@/api/modules/files";
 import { useFeedbackStore } from "@/stores/feedback";
 import { useNetworkStore } from "@/stores/network";
 
@@ -12,7 +13,7 @@ const { isLoading } = storeToRefs(networkStore);
 </script>
 
 <template>
-  <AppConfigProvider>
+  <AppConfigProvider :image-asset-adapter="imageAssetAdapter">
     <RouterView />
     <AppNetworkLoadingOverlay :loading="isLoading" />
     <AppToast :items="messages" @action="feedbackStore.triggerAction" @close="feedbackStore.close" />

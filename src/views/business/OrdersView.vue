@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
-import { createOrderExportTask, downloadOrderExportTask, getOrderExportTasks, getOrders, removeOrderExportTask, retryOrderExportTask } from "@/api/modules/orders";
+import { createOrderExportTask, downloadOrderExportTask, getOrderExportTasks, getOrders, removeOrderExportTask, retryOrderExportTask, updateOrderStatus } from "@/api/modules/orders";
 import { AppButton } from "aps-design-pro";
 import { AppIconButton } from "aps-design-pro";
 import { AppDataTable } from "aps-design-pro";
@@ -20,11 +20,14 @@ import { AppFilterBar } from "aps-design-pro";
 import { AppFormField } from "aps-design-pro";
 import { AppSearchInput } from "aps-design-pro";
 import { AppSelect } from "aps-design-pro";
+import { AppDateRangePicker } from "aps-design-pro";
+import { AppNumberInput } from "aps-design-pro";
+import { AppDropdown } from "aps-design-pro";
 import { AppCard } from "aps-design-pro";
 import { useAuthStore } from "@/stores/auth";
 import { useFeedbackStore } from "@/stores/feedback";
-import type { DataTableColumn, ExportTask, SelectOption, StatusTone, TableViewScope } from "aps-design-pro";
-import type { OrderListQuery, OrderStatus, SalesOrder } from "@/types/orders";
+import type { DataTableColumn, DateRangeValue, DropdownItem, ExportTask, SelectOption, StatusTone, TableViewScope } from "aps-design-pro";
+import type { OrderExportQuery, OrderListQuery, OrderStatus, OrderStatusAction, SalesOrder } from "@/types/orders";
 
 interface OrderStatusDisplay {
   label: string;
@@ -59,6 +62,10 @@ const DEFAULT_ORDER_QUERY: OrderListQuery = {
   keyword: "",
   status: undefined,
   channel: "",
+  createdFrom: "",
+  createdTo: "",
+  minAmount: undefined,
+  maxAmount: undefined,
   page: 1,
   pageSize: 20,
   sortBy: "createdAt",
@@ -69,6 +76,13 @@ const authStore = useAuthStore();
 const isAdvancedFilterOpen = ref(false);
 const isExporting = ref(false);
 const isTableFullscreen = ref(false);
+const orderDateRange = ref<DateRangeValue>({ start: "", end: "" });
+const minAmountInput = ref(0);
+const maxAmountInput = ref(0);
+const hasMinAmount = ref(false);
+const hasMaxAmount = ref(false);
+const updatingOrderId = ref<string | null>(null);
+const openOrderActionId = ref<string | null>(null);
 const exportTasks = ref<ExportTask[]>([]);
 let exportTaskPollingTimer: number | undefined;
 let exportTaskRequestVersion = 0;
@@ -121,8 +135,33 @@ async function loadOrders(resetPage = false): Promise<void> {
   await orderDataSource.reload({ resetPage });
 }
 
+function buildOrderFilterQuery(): Pick<OrderListQuery, "keyword" | "status" | "channel" | "createdFrom" | "createdTo" | "minAmount" | "maxAmount"> {
+  return {
+    keyword: keyword.value,
+    status: status.value || undefined,
+    channel: channel.value,
+    createdFrom: orderDateRange.value.start,
+    createdTo: orderDateRange.value.end,
+    minAmount: hasMinAmount.value ? minAmountInput.value : undefined,
+    maxAmount: hasMaxAmount.value ? maxAmountInput.value : undefined,
+  };
+}
+
+function submitFilters(): void {
+  if (hasMinAmount.value && hasMaxAmount.value && minAmountInput.value > maxAmountInput.value) {
+    feedbackStore.show("金额下限不能大于上限。", "error");
+    return;
+  }
+  void orderDataSource.updateQuery(buildOrderFilterQuery(), { resetPage: true });
+}
+
 function resetFilters(): void {
-  void orderDataSource.updateQuery({ keyword: "", status: undefined, channel: "" }, { resetPage: true });
+  orderDateRange.value = { start: "", end: "" };
+  minAmountInput.value = 0;
+  maxAmountInput.value = 0;
+  hasMinAmount.value = false;
+  hasMaxAmount.value = false;
+  void orderDataSource.updateQuery({ keyword: "", status: undefined, channel: "", createdFrom: "", createdTo: "", minAmount: undefined, maxAmount: undefined }, { resetPage: true });
 }
 
 function handleSortChange(nextSort: { key: string; order: "asc" | "desc" }): void {
@@ -223,7 +262,9 @@ async function startOrderExport(): Promise<void> {
   isExporting.value = true;
   try {
     const query = orderDataSource.query.value;
-    const task = await createOrderExportTask({ keyword: query.keyword?.trim() || undefined, status: query.status, channel: query.channel || undefined, sortBy: query.sortBy, sortOrder: query.sortOrder });
+    const filterQuery = buildOrderFilterQuery();
+    const exportQuery: OrderExportQuery = { ...filterQuery, sortBy: query.sortBy, sortOrder: query.sortOrder };
+    const task = await createOrderExportTask(exportQuery);
     replaceExportTask(task);
     scheduleExportTaskPolling();
     feedbackStore.show("订单导出任务已创建。", "success");
@@ -232,6 +273,48 @@ async function startOrderExport(): Promise<void> {
     feedbackStore.show(message, "error");
   } finally {
     isExporting.value = false;
+  }
+}
+
+const orderStatusActionLabels: Partial<Record<OrderStatusAction, string>> = {
+  remind_payment: "催付",
+  cancel: "关闭订单",
+  start_fulfillment: "开始履约",
+  mark_shipped: "确认交付",
+  complete: "完成订单",
+};
+
+function getOrderActionItems(row: SalesOrder): DropdownItem[] {
+  const actionMap: Partial<Record<OrderStatus, OrderStatusAction[]>> = {
+    pending_payment: ["remind_payment", "cancel"],
+    paid: ["start_fulfillment"],
+    fulfilling: ["mark_shipped"],
+    shipped: ["complete"],
+  };
+  return (actionMap[row.status] ?? []).map((action) => ({
+    key: action,
+    label: orderStatusActionLabels[action] ?? action,
+    icon: action === "cancel" ? "close" : action === "complete" ? "check" : "arrow-right",
+    danger: action === "cancel",
+    divided: action === "cancel",
+  }));
+}
+
+async function handleOrderStatusAction(row: SalesOrder, action: string): Promise<void> {
+  if (!(action in orderStatusActionLabels) || updatingOrderId.value) return;
+  const statusAction = action as OrderStatusAction;
+  openOrderActionId.value = null;
+  updatingOrderId.value = row.id;
+  try {
+    const updatedOrder = await updateOrderStatus(row.id, { action: statusAction });
+    const rowIndex = orders.value.findIndex((item) => item.id === row.id);
+    if (rowIndex >= 0) orders.value.splice(rowIndex, 1, updatedOrder);
+    feedbackStore.show(`订单${orderStatusActionLabels[statusAction]}成功。`, "success");
+    await loadOrders();
+  } catch (error) {
+    feedbackStore.show(error instanceof Error ? error.message : `订单${orderStatusActionLabels[statusAction]}失败，请稍后重试。`, "error");
+  } finally {
+    updatingOrderId.value = null;
   }
 }
 
@@ -291,20 +374,25 @@ onBeforeUnmount(() => {
 <template>
   <section class="page-content page-stack list-page-layout">
     <AppCard as="section" padding="large" content-overflow="visible" class="list-search-panel" aria-label="交易订单筛选条件">
-      <AppFilterBar :expanded="isAdvancedFilterOpen" collapsible @submit="loadOrders(true)" @reset="resetFilters" @update:expanded="isAdvancedFilterOpen = $event">
-        <AppFormField label="关键词" for="order-keyword" label-position="inline" label-width="44px" label-gap="6px"><AppSearchInput id="order-keyword" v-model="keyword" placeholder="搜索订单号、会员或商品" aria-label="搜索交易订单" @search="loadOrders(true)" /></AppFormField>
-        <template #advanced><AppFormField label="状态" for="order-status" label-position="inline" label-width="32px" label-gap="6px"><AppSelect id="order-status" v-model="status" :options="statusOptions" aria-label="按订单状态筛选" /></AppFormField><AppFormField label="来源" for="order-channel" label-position="inline" label-width="32px" label-gap="6px"><AppSelect id="order-channel" v-model="channel" :options="channelOptions" aria-label="按订单来源筛选" /></AppFormField></template>
+      <AppFilterBar :expanded="isAdvancedFilterOpen" collapsible @submit="submitFilters" @reset="resetFilters" @update:expanded="isAdvancedFilterOpen = $event">
+        <AppFormField label="关键词" for="order-keyword" label-position="inline" label-width="44px" label-gap="6px"><AppSearchInput id="order-keyword" v-model="keyword" placeholder="搜索订单号、会员或商品" aria-label="搜索交易订单" @search="submitFilters" /></AppFormField>
+        <template #advanced>
+          <AppFormField label="状态" for="order-status" label-position="inline" label-width="32px" label-gap="6px"><AppSelect id="order-status" v-model="status" :options="statusOptions" aria-label="按订单状态筛选" /></AppFormField>
+          <AppFormField label="来源" for="order-channel" label-position="inline" label-width="32px" label-gap="6px"><AppSelect id="order-channel" v-model="channel" :options="channelOptions" aria-label="按订单来源筛选" /></AppFormField>
+          <AppFormField label="下单日期" label-position="inline" label-width="56px" label-gap="6px"><AppDateRangePicker v-model="orderDateRange" compact clearable aria-label="按下单日期范围筛选" /></AppFormField>
+          <AppFormField label="金额" label-position="inline" label-width="32px" label-gap="6px"><div class="amount-filter"><AppNumberInput v-model="minAmountInput" :min="0" :step="0.01" :precision="2" :controls="false" :value-on-clear="0" placeholder="最低" aria-label="订单金额下限" @change="hasMinAmount = true" @clear="hasMinAmount = false" /><span>至</span><AppNumberInput v-model="maxAmountInput" :min="0" :step="0.01" :precision="2" :controls="false" :value-on-clear="0" placeholder="最高" aria-label="订单金额上限" @change="hasMaxAmount = true" @clear="hasMaxAmount = false" /></div></AppFormField>
+        </template>
         <template #actions><AppButton type="submit" :disabled="isLoading" leading-icon="search">查询</AppButton></template>
       </AppFilterBar>
     </AppCard>
     <AppCard as="section" padding="none" fill-height class="data-table-card" aria-label="订单列表">
       <AppTableToolbar><template #actions><AppTableOperationBar :fullscreen="isTableFullscreen" show-print show-fullscreen show-refresh :print-disabled="isLoading" :refresh-disabled="isLoading" @print="printOrders" @update:fullscreen="isTableFullscreen = $event" @refresh="loadOrders"><template #view><AppTableViewSelector :model-value="activeOrderTableViewId" :views="orderTableViews" :loading="isLoadingOrderTableViews" :saving="isSavingOrderTableViews" :error="orderTableViewError" @update:model-value="orderTableViewState.selectView" @create="createOrderTableView" @rename="renameOrderTableView" @remove="removeOrderTableView" /></template><template #settings><AppTableSettingsPanel :model-value="orderTablePreference" :default-value="defaultOrderTablePreference" :columns="ORDER_TABLE_COLUMNS" :saving="isSavingOrderTablePreference" :save-error="orderTablePreferenceError" @update:model-value="updateOrderTablePreference" /></template><template #export><AppExportTaskPanel :tasks="exportTasks" :creating="isExporting" :disabled="isLoading || total === 0" @create="startOrderExport" @download="downloadExportTask" @retry="retryOrderExport" @remove="removeExportTask" /></template></AppTableOperationBar></template></AppTableToolbar>
-      <AppDataTable :rows="orders" :columns="orderTableColumns" row-key="id" :loading="isLoading" :error-message="errorMessage" :sort="tableSort" :column-widths="orderColumnWidths" :striped="orderTablePreference.striped" :show-column-dividers="orderTablePreference.showColumnDividers" :size="orderTableSize" :fullscreen="isTableFullscreen" resizable action-label="操作" empty-title="没有找到匹配订单" empty-description="调整搜索条件后再试一次。" empty-icon="grid" virtual fill-height :virtual-row-height="orderTablePreference.density === 'compact' ? 64 : 72" @update:fullscreen="isTableFullscreen = $event" @update:column-widths="updateOrderColumnWidths" @sort-change="handleSortChange" @retry="loadOrders"><template #cell-orderNo="{ row }"><RouterLink class="order-number" :to="`/trade/orders/${row.id}`">{{ row.orderNo }}</RouterLink></template><template #cell-customerName="{ row }"><div class="customer-cell"><strong>{{ row.customerName }}</strong><span>{{ row.customerPhone }}</span></div></template><template #cell-productSummary="{ row }"><span class="product-cell">{{ row.productSummary }}</span></template><template #cell-amount="{ row }"><strong class="amount-cell">{{ formatAmount(row.amount) }}</strong></template><template #cell-status="{ row }"><AppStatusTag :tone="getStatusDisplay(row.status).tone" :label="getStatusDisplay(row.status).label" /></template><template #actions="{ row }"><AppTableActions><RouterLink v-slot="{ navigate }" custom :to="`/trade/orders/${row.id}`"><AppIconButton icon="eye" label="查看订单详情" size="small" @click="navigate" /></RouterLink></AppTableActions></template></AppDataTable>
+      <AppDataTable :rows="orders" :columns="orderTableColumns" row-key="id" :loading="isLoading" :error-message="errorMessage" :sort="tableSort" :column-widths="orderColumnWidths" :striped="orderTablePreference.striped" :show-column-dividers="orderTablePreference.showColumnDividers" :size="orderTableSize" :fullscreen="isTableFullscreen" resizable action-label="操作" empty-title="没有找到匹配订单" empty-description="调整搜索条件后再试一次。" empty-icon="grid" virtual fill-height :virtual-row-height="orderTablePreference.density === 'compact' ? 64 : 72" @update:fullscreen="isTableFullscreen = $event" @update:column-widths="updateOrderColumnWidths" @sort-change="handleSortChange" @retry="loadOrders"><template #cell-orderNo="{ row }"><RouterLink class="order-number" :to="`/trade/orders/${row.id}`">{{ row.orderNo }}</RouterLink></template><template #cell-customerName="{ row }"><div class="customer-cell"><strong>{{ row.customerName }}</strong><span>{{ row.customerPhone }}</span></div></template><template #cell-productSummary="{ row }"><span class="product-cell">{{ row.productSummary }}</span></template><template #cell-amount="{ row }"><strong class="amount-cell">{{ formatAmount(row.amount) }}</strong></template><template #cell-status="{ row }"><AppStatusTag :tone="getStatusDisplay(row.status).tone" :label="getStatusDisplay(row.status).label" /></template><template #actions="{ row }"><AppTableActions><RouterLink v-slot="{ navigate }" custom :to="`/trade/orders/${row.id}`"><AppIconButton icon="eye" label="查看订单详情" size="small" @click="navigate" /></RouterLink><AppDropdown v-if="getOrderActionItems(row).length" :model-value="openOrderActionId === row.id" :items="getOrderActionItems(row)" menu-label="订单操作" @update:model-value="openOrderActionId = $event ? row.id : null" @select="handleOrderStatusAction(row, $event)"><template #trigger="{ toggle }"><AppIconButton icon="dots" label="订单操作" size="small" :disabled="updatingOrderId === row.id" @click="toggle" /></template></AppDropdown></AppTableActions></template></AppDataTable>
       <AppPagination v-if="!isLoading && !errorMessage && orders.length" :page="page" :page-size="pageSize" :total="total" :page-size-options="[10, 20, 30, 50]" @update:page="updateOrderPage" @update:page-size="updateOrderPageSize" />
     </AppCard>
   </section>
 </template>
 
 <style scoped>
-.order-summary { color: var(--aps-muted); font-size: var(--aps-text-sm); }.order-number { color: var(--aps-blue); font-size: var(--aps-text-sm); font-weight: 660; }.order-number:hover { color: var(--aps-blue-hover); text-decoration: underline; text-underline-offset: 3px; }.customer-cell { display: grid; gap: 2px; }.customer-cell strong { color: var(--aps-ink); font-size: var(--aps-text-sm); font-weight: 660; }.customer-cell span { color: var(--aps-faint); font-size: var(--aps-text-xs); }.product-cell { color: var(--aps-ink); font-size: var(--aps-text-sm); }.amount-cell { color: var(--aps-ink); font-size: var(--aps-text-sm); font-variant-numeric: tabular-nums; }
+.order-summary { color: var(--aps-muted); font-size: var(--aps-text-sm); }.order-number { color: var(--aps-blue); font-size: var(--aps-text-sm); font-weight: 660; }.order-number:hover { color: var(--aps-blue-hover); text-decoration: underline; text-underline-offset: 3px; }.customer-cell { display: grid; gap: 2px; }.customer-cell strong { color: var(--aps-ink); font-size: var(--aps-text-sm); font-weight: 660; }.customer-cell span { color: var(--aps-faint); font-size: var(--aps-text-xs); }.product-cell { color: var(--aps-ink); font-size: var(--aps-text-sm); }.amount-cell { color: var(--aps-ink); font-size: var(--aps-text-sm); font-variant-numeric: tabular-nums; }.amount-filter { display: flex; min-width: 246px; align-items: center; gap: 7px; }.amount-filter > span { color: var(--aps-faint); font-size: var(--aps-text-xs); }.amount-filter :deep(.app-number-input) { min-width: 0; flex: 1; }
 </style>
