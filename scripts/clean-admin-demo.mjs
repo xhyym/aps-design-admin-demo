@@ -10,6 +10,7 @@ const supportedArguments = new Set(["--apply", "--allow-dirty", "--dry-run"]);
 const unknownArguments = [...argumentsSet].filter((argument) => !supportedArguments.has(argument));
 const isApplyMode = argumentsSet.has("--apply");
 const allowsDirtyWorktree = argumentsSet.has("--allow-dirty");
+const starterTemplateDirectory = resolve(scriptDirectory, "starter-templates");
 
 /**
  * 仅允许删除当前 demo 中已核实的业务实现目录，避免脚本接收任意路径导致误删。
@@ -63,7 +64,26 @@ const authenticationStarterFiles = {
   "src/router/index.ts": `import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";\nimport AppLayout from "@/layouts/AppLayout.vue";\nimport { useAuthStore } from "@/stores/auth";\n\nconst LoginView = () => import("@/views/auth/LoginView.vue");\nconst WorkbenchView = () => import("@/views/dashboard/WorkbenchView.vue");\nconst isAuthenticationRequired = import.meta.env.VITE_AUTH_REQUIRED === "true";\n\ndeclare module "vue-router" {\n  interface RouteMeta {\n    title?: string;\n    public?: boolean;\n  }\n}\n\nconst routes: RouteRecordRaw[] = [\n  { path: "/login", name: "login", component: LoginView, meta: { title: "登录", public: true } },\n  {\n    path: "/",\n    component: AppLayout,\n    redirect: "/dashboard",\n    children: [\n      { path: "dashboard", name: "dashboard", component: WorkbenchView, meta: { title: "经营总览" } },\n    ],\n  },\n  { path: "/:pathMatch(.*)*", redirect: "/dashboard" },\n];\n\n/** 认证默认关闭，方便在尚未接入后端时直接开发页面；启用环境变量后统一保护业务路由。 */\nconst router = createRouter({ history: createWebHistory(), routes });\n\nrouter.beforeEach((to) => {\n  if (!isAuthenticationRequired || to.meta.public) return true;\n  const authStore = useAuthStore();\n  if (authStore.isAuthenticated) return true;\n  return { name: "login", query: { redirect: to.fullPath } };\n});\n\nexport default router;\n`,
 };
 
-Object.assign(starterFiles, authenticationStarterFiles);
+/**
+ * 偏好设置属于管理后台壳层能力，而非业务模块。即使业务页面被清理，
+ * 也必须重新生成对应 Store 与布局，确保主题、主题色和显示密度可以持续使用。
+ */
+const preferenceStarterFiles = {
+  "src/App.vue": readStarterTemplate("App.vue"),
+  "src/layouts/AppLayout.vue": readStarterTemplate("AppLayout.vue"),
+  "src/stores/app.ts": readStarterTemplate("app.ts"),
+};
+
+Object.assign(starterFiles, authenticationStarterFiles, preferenceStarterFiles);
+
+function readStarterTemplate(templateName) {
+  const templatePath = resolve(starterTemplateDirectory, templateName);
+  if (!existsSync(templatePath)) {
+    throw new Error(`缺少后台骨架模板：${relative(projectRoot, templatePath)}。`);
+  }
+
+  return readFileSync(templatePath, "utf8");
+}
 
 function fail(message) {
   console.error(`[清理骨架] ${message}`);
@@ -99,7 +119,7 @@ function hasDirtyGitWorktree() {
 function printPlan() {
   console.info("[清理骨架] 将删除以下业务实现目录：");
   removalTargets.forEach((target) => console.info(`  - ${target}`));
-  console.info("[清理骨架] 将重建登录与认证骨架、最小应用外壳、单一经营总览、统一请求客户端和导航配置。");
+  console.info("[清理骨架] 将重建登录与认证骨架、带可持久化偏好设置的应用外壳、单一经营总览、统一请求客户端和导航配置。");
 }
 
 function removeTarget(relativePath) {
