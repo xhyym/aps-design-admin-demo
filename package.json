@@ -9,7 +9,9 @@
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "typecheck": "vue-tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "scaffold:clean:preview": "node scripts/clean-admin-demo.mjs --dry-run",
+    "scaffold:clean": "node scripts/clean-admin-demo.mjs --apply"
   },
   "dependencies": {
     "aps-design-pro": "^0.3.1",
