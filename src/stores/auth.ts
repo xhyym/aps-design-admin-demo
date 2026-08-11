@@ -57,50 +57,6 @@ const DEFAULT_ECOMMERCE_NAVIGATION: NavigationItem[] = [
     ],
   },
   {
-    key: "members",
-    label: "会员中心",
-    path: "/members/list",
-    icon: "users",
-    permission: "business:member:read",
-    children: [
-      { key: "members", label: "会员列表", path: "/members/list", icon: "users", permission: "business:member:read" },
-      { key: "member-segments", label: "会员分群", path: "/members/segments", icon: "filter", permission: "business:member:read" },
-    ],
-  },
-  {
-    key: "marketing",
-    label: "营销中心",
-    path: "/marketing/campaigns",
-    icon: "bell",
-    permission: "business:marketing:read",
-    children: [
-      { key: "marketing-campaigns", label: "营销活动", path: "/marketing/campaigns", icon: "bell", permission: "business:marketing:read" },
-      { key: "marketing-coupons", label: "优惠券中心", path: "/marketing/coupons", icon: "check", permission: "business:marketing:read" },
-    ],
-  },
-  {
-    key: "inventory",
-    label: "库存与履约",
-    path: "/inventory/overview",
-    icon: "panel",
-    permission: "business:inventory:read",
-    children: [
-      { key: "inventory", label: "库存概览", path: "/inventory/overview", icon: "panel", permission: "business:inventory:read" },
-      { key: "inventory-warehouses", label: "仓库管理", path: "/inventory/warehouses", icon: "panel", permission: "business:inventory:read" },
-    ],
-  },
-  {
-    key: "analytics",
-    label: "数据分析",
-    path: "/analytics/overview",
-    icon: "chart",
-    permission: "business:analytics:read",
-    children: [
-      { key: "analytics", label: "经营分析", path: "/analytics/overview", icon: "chart", permission: "business:analytics:read" },
-      { key: "analytics-products", label: "商品分析", path: "/analytics/products", icon: "chart", permission: "business:analytics:read" },
-    ],
-  },
-  {
     key: "system",
     label: "系统设置",
     path: "/system/users",

@@ -1,7 +1,4 @@
 import type {
-  CampaignRecord,
-  InventoryRecord,
-  MemberRecord,
   OperationsDashboardData,
   ProductCategory,
   ProductCoverTone,
@@ -189,43 +186,18 @@ export const refunds: RefundRecord[] = [
   },
 ];
 
-export const members: MemberRecord[] = [
-  { id: "member-001", name: "陈一然", phone: "138****4206", level: "黑金会员", tags: ["高复购", "咖啡器具"], totalSpent: 12860, orderCount: 38, lastOrderAt: "今天 10:08", status: "normal" },
-  { id: "member-002", name: "周予安", phone: "156****8301", level: "铂金会员", tags: ["售后跟进", "企业团购"], totalSpent: 7650, orderCount: 19, lastOrderAt: "今天 09:21", status: "risk" },
-  { id: "member-003", name: "宋知夏", phone: "188****0938", level: "黄金会员", tags: ["礼盒偏好"], totalSpent: 4260, orderCount: 12, lastOrderAt: "昨天 18:32", status: "normal" },
-  { id: "member-004", name: "李明澈", phone: "139****6005", level: "黄金会员", tags: ["沉默唤醒"], totalSpent: 3588, orderCount: 9, lastOrderAt: "2026-06-11 14:16", status: "silent" },
-  { id: "member-005", name: "林言", phone: "186****7410", level: "普通会员", tags: ["冷萃偏好"], totalSpent: 896, orderCount: 4, lastOrderAt: "2026-07-30 10:42", status: "normal" },
-  { id: "member-006", name: "安禾", phone: "133****2157", level: "铂金会员", tags: ["新品尝鲜", "内容社群"], totalSpent: 6840, orderCount: 16, lastOrderAt: "2026-07-29 20:10", status: "normal" },
-];
-
-export const campaigns: CampaignRecord[] = [
-  { id: "campaign-001", name: "盛夏冷萃周", type: "限时折扣", status: "running", period: "08-01 至 08-07", target: "冷萃咖啡液", progress: 68, revenue: 84260 },
-  { id: "campaign-002", name: "新客首单礼", type: "优惠券", status: "running", period: "07-15 至 08-31", target: "全部商品", progress: 54, revenue: 126480 },
-  { id: "campaign-003", name: "会员日满减", type: "满减", status: "scheduled", period: "08-08 至 08-10", target: "会员用户", progress: 0, revenue: 0 },
-  { id: "campaign-004", name: "春日礼盒清仓", type: "会员专享", status: "ended", period: "07-20 至 07-31", target: "礼盒品类", progress: 100, revenue: 45720 },
-];
-
-export const inventories: InventoryRecord[] = [
-  { id: "stock-001", sku: "COF-GIFT-001", productName: "云岚手冲咖啡礼盒", warehouse: "杭州主仓", available: 186, locked: 14, safetyStock: 60, status: "healthy", updatedAt: "今天 10:31" },
-  { id: "stock-002", sku: "COF-COLD-012", productName: "山野冷萃咖啡液 12 瓶", warehouse: "杭州主仓", available: 42, locked: 18, safetyStock: 45, status: "warning", updatedAt: "今天 10:18" },
-  { id: "stock-003", sku: "BREW-KETTLE-600", productName: "曜石手冲壶 600ml", warehouse: "上海前置仓", available: 18, locked: 6, safetyStock: 30, status: "critical", updatedAt: "今天 09:56" },
-  { id: "stock-004", sku: "COF-DRIP-020", productName: "深烘拼配挂耳咖啡 20 包", warehouse: "杭州主仓", available: 0, locked: 0, safetyStock: 80, status: "critical", updatedAt: "今天 09:40" },
-  { id: "stock-005", sku: "LIFE-MUG-450", productName: "旅行随行保温杯", warehouse: "广州区域仓", available: 214, locked: 9, safetyStock: 50, status: "healthy", updatedAt: "昨天 18:28" },
-  { id: "stock-006", sku: "BEAN-ETH-250", productName: "埃塞俄比亚日晒豆 250g", warehouse: "上海前置仓", available: 23, locked: 12, safetyStock: 35, status: "warning", updatedAt: "昨天 17:40" },
-];
-
 export const operationsDashboard: OperationsDashboardData = {
   updatedAt: "今天 10:32",
   metrics: [
     { label: "今日成交额", value: "¥ 86,420", detail: "较昨日同期", trend: "+12.6%", tone: "success", icon: "chart" },
     { label: "待发货订单", value: "128", detail: "其中超时风险", trend: "6 单", tone: "warning", icon: "grid" },
-    { label: "新增会员", value: "346", detail: "新客转化率", trend: "18.4%", tone: "info", icon: "users" },
-    { label: "库存预警", value: "4", detail: "需要补货 SKU", trend: "立即处理", tone: "danger", icon: "warning" },
+    { label: "新客订单", value: "346", detail: "新客转化率", trend: "18.4%", tone: "info", icon: "users" },
+    { label: "待完善商品", value: "4", detail: "缺少完整规格", trend: "立即处理", tone: "danger", icon: "warning" },
   ],
   todos: [
-    { id: "todo-001", title: "4 个 SKU 低于安全库存", description: "挂耳咖啡已售罄，冷萃和手冲壶将在本周耗尽。", actionLabel: "查看库存", path: "/inventory/overview", tone: "danger" },
+    { id: "todo-001", title: "4 个商品待补充规格", description: "商品主图和规格信息尚未完善，发布前请完成核对。", actionLabel: "完善商品", path: "/products/catalog", tone: "danger" },
     { id: "todo-002", title: "2 笔退款等待审核", description: "包含一笔商品破损退款，请在 24 小时内完成处理。", actionLabel: "处理售后", path: "/after-sales/refunds", tone: "warning" },
-    { id: "todo-003", title: "会员日活动尚未发布", description: "活动将于 8 月 8 日开启，建议今日完成券包与商品校验。", actionLabel: "前往营销", path: "/marketing/campaigns", tone: "info" },
+    { id: "todo-003", title: "3 笔订单等待发货", description: "请核对收货信息与商品 SKU，避免订单超时。", actionLabel: "查看订单", path: "/trade/orders", tone: "info" },
   ],
   salesCategories: ["7/28", "7/29", "7/30", "7/31", "8/01", "8/02", "8/03"],
   salesSeries: [{ name: "成交额", data: [61200, 68540, 59420, 73860, 92140, 76780, 86420] }, { name: "目标", data: [60000, 60000, 60000, 70000, 80000, 80000, 80000] }],

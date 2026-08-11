@@ -56,10 +56,6 @@ const ProductsView = () => import("@/views/business/ProductsView.vue");
 const ProductCategoriesView = () => import("@/views/business/ProductCategoriesView.vue");
 const ProductAttributesView = () => import("@/views/business/ProductAttributesView.vue");
 const AfterSalesView = () => import("@/views/business/AfterSalesView.vue");
-const MembersView = () => import("@/views/business/MembersView.vue");
-const MarketingView = () => import("@/views/business/MarketingView.vue");
-const InventoryView = () => import("@/views/business/InventoryView.vue");
-const AnalyticsView = () => import("@/views/business/AnalyticsView.vue");
 const CommerceScenarioView = () => import("@/views/business/CommerceScenarioView.vue");
 
 declare module "vue-router" {
@@ -102,14 +98,6 @@ const routes: RouteRecordRaw[] = [
       { path: "products/attributes", name: "product-attributes", component: ProductAttributesView, meta: { title: "规格模板", icon: "edit", permission: "business:product:read" } },
       { path: "after-sales/refunds", name: "refunds", component: AfterSalesView, meta: { title: "退款与售后", icon: "refresh", permission: "business:refund:read", keepAlive: true, cacheName: "AfterSalesView" } },
       { path: "after-sales/tickets", name: "after-sales-tickets", component: CommerceScenarioView, props: { scenario: "after-sales-tickets" }, meta: { title: "售后工单", icon: "bell", permission: "business:refund:read" } },
-      { path: "members/list", name: "members", component: MembersView, meta: { title: "会员中心", icon: "users", permission: "business:member:read", keepAlive: true, cacheName: "MembersView" } },
-      { path: "members/segments", name: "member-segments", component: CommerceScenarioView, props: { scenario: "member-segments" }, meta: { title: "会员分群", icon: "filter", permission: "business:member:read" } },
-      { path: "marketing/campaigns", name: "campaigns", component: MarketingView, meta: { title: "营销活动", icon: "bell", permission: "business:marketing:read", keepAlive: true, cacheName: "MarketingView" } },
-      { path: "marketing/coupons", name: "marketing-coupons", component: CommerceScenarioView, props: { scenario: "marketing-coupons" }, meta: { title: "优惠券中心", icon: "check", permission: "business:marketing:read" } },
-      { path: "inventory/overview", name: "inventory", component: InventoryView, meta: { title: "库存与履约", icon: "panel", permission: "business:inventory:read", keepAlive: true, cacheName: "InventoryView" } },
-      { path: "inventory/warehouses", name: "inventory-warehouses", component: CommerceScenarioView, props: { scenario: "inventory-warehouses" }, meta: { title: "仓库管理", icon: "panel", permission: "business:inventory:read" } },
-      { path: "analytics/overview", name: "analytics", component: AnalyticsView, meta: { title: "经营分析", icon: "chart", permission: "business:analytics:read", keepAlive: true, cacheName: "AnalyticsView" } },
-      { path: "analytics/products", name: "analytics-products", component: CommerceScenarioView, props: { scenario: "analytics-products" }, meta: { title: "商品分析", icon: "chart", permission: "business:analytics:read" } },
       { path: "examples/components", name: "components", component: ComponentsView, props: { section: "overview" }, meta: { title: "组件概览", icon: "grid", permission: "dashboard:view", keepAlive: true, cacheName: "ComponentsView" } },
       { path: "examples/base", name: "component-base", component: ComponentsView, props: { section: "base" }, meta: { title: "基础控件", icon: "grid", permission: "dashboard:view", keepAlive: true, cacheName: "ComponentsView" } },
       { path: "examples/selection", name: "component-selection", component: ComponentsView, props: { section: "selection" }, meta: { title: "选择控件", icon: "check", permission: "dashboard:view", keepAlive: true, cacheName: "ComponentsView" } },

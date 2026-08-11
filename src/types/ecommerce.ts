@@ -8,9 +8,6 @@ export type ProductCoverTone = "blue" | "orange" | "purple" | "green" | "graphit
 export type RefundStatus = "pending" | "reviewing" | "approved" | "rejected" | "completed";
 export type RefundType = "refund_only" | "return_refund";
 export type RefundReviewAction = "approve" | "reject" | "complete";
-export type MemberLevel = "黑金会员" | "铂金会员" | "黄金会员" | "普通会员";
-export type CampaignStatus = "scheduled" | "running" | "ended";
-export type StockStatus = "healthy" | "warning" | "critical";
 
 export interface ProductRecord {
   id: string;
@@ -193,41 +190,6 @@ export interface RefundReviewInput {
   remark?: string;
 }
 
-export interface MemberRecord {
-  id: string;
-  name: string;
-  phone: string;
-  level: MemberLevel;
-  tags: string[];
-  totalSpent: number;
-  orderCount: number;
-  lastOrderAt: string;
-  status: "normal" | "silent" | "risk";
-}
-
-export interface CampaignRecord {
-  id: string;
-  name: string;
-  type: "优惠券" | "满减" | "限时折扣" | "会员专享";
-  status: CampaignStatus;
-  period: string;
-  target: string;
-  progress: number;
-  revenue: number;
-}
-
-export interface InventoryRecord {
-  id: string;
-  sku: string;
-  productName: string;
-  warehouse: string;
-  available: number;
-  locked: number;
-  safetyStock: number;
-  status: StockStatus;
-  updatedAt: string;
-}
-
 export interface OperationsMetric {
   label: string;
   value: string;
@@ -276,20 +238,6 @@ export interface RefundListQuery {
   pageSize?: number;
 }
 
-export interface MemberListQuery {
-  keyword?: string;
-  level?: MemberLevel | "";
-  page?: number;
-  pageSize?: number;
-}
-
-export interface InventoryListQuery {
-  keyword?: string;
-  status?: StockStatus | "";
-  page?: number;
-  pageSize?: number;
-}
-
 export interface SpecificationTemplateListQuery {
   keyword?: string;
   status?: SpecificationTemplateStatus | "";
@@ -299,6 +247,4 @@ export interface SpecificationTemplateListQuery {
 
 export type ProductPageResult = PageResult<ProductRecord>;
 export type RefundPageResult = PageResult<RefundRecord>;
-export type MemberPageResult = PageResult<MemberRecord>;
-export type InventoryPageResult = PageResult<InventoryRecord>;
 export type SpecificationTemplatePageResult = PageResult<SpecificationTemplate>;

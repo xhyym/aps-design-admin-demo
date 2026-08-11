@@ -1,11 +1,6 @@
 import { request } from "../client";
-import { campaigns, inventories, members, operationsDashboard } from "@/mock/ecommerce";
+import { operationsDashboard } from "@/mock/ecommerce";
 import type {
-  CampaignRecord,
-  InventoryListQuery,
-  InventoryPageResult,
-  MemberListQuery,
-  MemberPageResult,
   OperationsDashboardData,
   ProductBatchUpdateInput,
   ProductCategory,
@@ -135,42 +130,4 @@ export function reviewRefund(id: string, input: RefundReviewInput): Promise<Refu
 /** 仅待审核或已拒绝记录允许移除，已通过的财务记录必须保留。 */
 export function removeRefund(id: string): Promise<null> {
   return request<null>({ url: `/business/refunds/${encodeURIComponent(id)}`, method: "delete" });
-}
-
-export function getMembers(query: MemberListQuery): Promise<MemberPageResult> {
-  const filteredMembers = members.filter((item) => !query.level || item.level === query.level);
-  return resolveMockData(createPageResult(filteredMembers, query, ["name", "phone", "level", "lastOrderAt"])) as Promise<MemberPageResult>;
-}
-
-export function getInventory(query: InventoryListQuery): Promise<InventoryPageResult> {
-  const filteredInventory = inventories.filter((item) => !query.status || item.status === query.status);
-  return resolveMockData(createPageResult(filteredInventory, query, ["sku", "productName", "warehouse", "updatedAt", "available"])) as Promise<InventoryPageResult>;
-}
-
-export function getCampaigns(): Promise<CampaignRecord[]> {
-  return resolveMockData(campaigns);
-}
-
-/** 其余列表的筛选、排序和分页保持既有行为，避免本轮改造波及未改造业务模块。 */
-function createPageResult<TItem extends object>(
-  source: TItem[],
-  query: { keyword?: string; page?: number; pageSize?: number; sortBy?: string; sortOrder?: "asc" | "desc" },
-  searchFields: Array<keyof TItem>,
-): { list: TItem[]; total: number; page: number; pageSize: number } {
-  const keyword = query.keyword?.trim().toLocaleLowerCase("zh-CN") ?? "";
-  const page = Math.max(1, Math.floor(query.page ?? 1));
-  const pageSize = Math.max(1, Math.floor(query.pageSize ?? 10));
-  let items = [...source];
-
-  if (keyword) {
-    items = items.filter((item) => searchFields.some((field) => String(item[field] ?? "").toLocaleLowerCase("zh-CN").includes(keyword)));
-  }
-
-  if (query.sortBy && searchFields.includes(query.sortBy as keyof TItem)) {
-    const field = query.sortBy as keyof TItem;
-    const direction = query.sortOrder === "asc" ? 1 : -1;
-    items.sort((left, right) => String(left[field] ?? "").localeCompare(String(right[field] ?? ""), "zh-Hans-CN", { numeric: true }) * direction);
-  }
-
-  return { list: items.slice((page - 1) * pageSize, page * pageSize), total: items.length, page, pageSize };
 }

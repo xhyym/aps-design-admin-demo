@@ -17,14 +17,8 @@ import type { DataTableColumn, SelectOption, StatusTone } from "aps-design-pro";
 
 export type CommerceScenarioKey =
   | "dashboard-tasks"
-  | "product-categories"
-  | "product-attributes"
   | "order-exports"
-  | "after-sales-tickets"
-  | "member-segments"
-  | "marketing-coupons"
-  | "inventory-warehouses"
-  | "analytics-products";
+  | "after-sales-tickets";
 
 interface CommerceScenarioRow {
   id: string;
@@ -62,47 +56,17 @@ function createRows(prefix: string, entries: Array<[string, string, string, stri
 const scenarios: Record<CommerceScenarioKey, CommerceScenarioConfig> = {
   "dashboard-tasks": {
     primaryLabel: "待办事项", secondaryLabel: "负责人", categoryLabel: "任务类型", valueLabel: "截止时间", statusLabel: "处理状态", actionLabel: "处理任务", searchPlaceholder: "搜索任务、负责人或订单号", emptyTitle: "没有待处理任务", rows: createRows("task", [
-      ["确认高风险退款", "陈婉", "售后审核", "今天 14:00", "待处理", "10 分钟前"], ["补充春季活动库存", "林知远", "库存预警", "今天 16:30", "进行中", "35 分钟前"], ["审核新渠道结算", "周宁", "财务对账", "今天 18:00", "待处理", "1 小时前"], ["发布会员日券包", "苏禾", "营销发布", "明天 09:00", "已排期", "昨天 17:20"],
-    ]),
-  },
-  "product-categories": {
-    primaryLabel: "分类名称", secondaryLabel: "分类编码", categoryLabel: "商品数量", valueLabel: "展示排序", statusLabel: "发布状态", actionLabel: "编辑分类", searchPlaceholder: "搜索分类名称或编码", emptyTitle: "没有匹配分类", rows: createRows("category", [
-      ["咖啡器具", "coffee-tools", "126 件", "01", "已发布", "今天 09:12"], ["通勤包袋", "bags", "84 件", "02", "已发布", "昨天 18:44"], ["户外服饰", "outdoor-wear", "65 件", "03", "草稿", "昨天 15:26"], ["礼赠套装", "gift-sets", "42 件", "04", "已发布", "周一 11:08"],
-    ]),
-  },
-  "product-attributes": {
-    primaryLabel: "规格模板", secondaryLabel: "模板编码", categoryLabel: "关联商品", valueLabel: "字段数量", statusLabel: "使用状态", actionLabel: "配置模板", searchPlaceholder: "搜索规格模板或编码", emptyTitle: "没有匹配模板", rows: createRows("attribute", [
-      ["咖啡豆规格", "coffee-bean-v2", "38 个", "6 个", "使用中", "今天 08:48"], ["服饰尺码", "apparel-size", "74 个", "4 个", "使用中", "昨天 16:30"], ["礼盒组合", "gift-combo", "12 个", "8 个", "草稿", "昨天 13:11"], ["仓配属性", "fulfillment", "96 个", "5 个", "使用中", "周一 09:42"],
+      ["确认高风险退款", "陈婉", "售后审核", "今天 14:00", "待处理", "10 分钟前"], ["补充商品规格信息", "林知远", "商品维护", "今天 16:30", "进行中", "35 分钟前"], ["审核新渠道结算", "周宁", "财务对账", "今天 18:00", "待处理", "1 小时前"], ["核对待发货订单", "苏禾", "订单履约", "明天 09:00", "已排期", "昨天 17:20"],
     ]),
   },
   "order-exports": {
     primaryLabel: "导出任务", secondaryLabel: "创建人", categoryLabel: "数据范围", valueLabel: "文件大小", statusLabel: "任务状态", actionLabel: "下载文件", searchPlaceholder: "搜索任务编号或创建人", emptyTitle: "没有匹配导出任务", rows: createRows("export", [
-      ["订单明细 2026-08-03", "林知远", "近 30 天订单", "18.4 MB", "已完成", "今天 10:12"], ["渠道结算汇总", "苏禾", "7 月渠道订单", "6.8 MB", "处理中", "今天 09:56"], ["会员首购名单", "周宁", "会员筛选结果", "2.1 MB", "已完成", "昨天 17:30"], ["异常订单清单", "陈婉", "风险订单", "840 KB", "失败", "昨天 14:06"],
+      ["订单明细 2026-08-03", "林知远", "近 30 天订单", "18.4 MB", "已完成", "今天 10:12"], ["渠道结算汇总", "苏禾", "7 月渠道订单", "6.8 MB", "处理中", "今天 09:56"], ["待发货订单清单", "周宁", "待发货订单", "2.1 MB", "已完成", "昨天 17:30"], ["异常订单清单", "陈婉", "风险订单", "840 KB", "失败", "昨天 14:06"],
     ]),
   },
   "after-sales-tickets": {
     primaryLabel: "售后工单", secondaryLabel: "客户", categoryLabel: "问题类型", valueLabel: "响应时限", statusLabel: "工单状态", actionLabel: "查看工单", searchPlaceholder: "搜索工单号、客户或订单号", emptyTitle: "没有匹配售后工单", rows: createRows("ticket", [
       ["AS-20260803-018", "赵雨桐", "商品质量", "剩余 38 分钟", "待响应", "今天 10:28"], ["AS-20260803-014", "何远", "物流异常", "已超时 12 分钟", "处理中", "今天 09:46"], ["AS-20260802-097", "韩雪", "退货退款", "已完成", "已关闭", "昨天 18:22"], ["AS-20260802-083", "郭宁", "发票补开", "剩余 3 小时", "待处理", "昨天 16:10"],
-    ]),
-  },
-  "member-segments": {
-    primaryLabel: "会员分群", secondaryLabel: "分群编码", categoryLabel: "会员数量", valueLabel: "近 30 日成交", statusLabel: "分群状态", actionLabel: "查看成员", searchPlaceholder: "搜索分群名称或编码", emptyTitle: "没有匹配会员分群", rows: createRows("segment", [
-      ["高价值会员", "vip-high", "2,486 人", "¥ 486,920", "运行中", "今天 08:30"], ["春季活动新客", "spring-new", "8,120 人", "¥ 192,440", "运行中", "昨天 19:12"], ["沉默会员", "silent-90d", "4,632 人", "¥ 28,160", "待触达", "昨天 11:26"], ["咖啡器具偏好", "coffee-prefer", "1,906 人", "¥ 135,780", "运行中", "周一 15:48"],
-    ]),
-  },
-  "marketing-coupons": {
-    primaryLabel: "优惠券名称", secondaryLabel: "券码", categoryLabel: "适用商品", valueLabel: "已领取", statusLabel: "投放状态", actionLabel: "配置优惠券", searchPlaceholder: "搜索优惠券名称或券码", emptyTitle: "没有匹配优惠券", rows: createRows("coupon", [
-      ["会员日满减券", "VIPDAY30", "全场商品", "1,208 张", "投放中", "今天 09:20"], ["咖啡器具专享券", "COFFEE20", "咖啡器具", "842 张", "投放中", "昨天 18:08"], ["新客首单券", "FIRST50", "指定商品", "3,481 张", "已结束", "昨天 12:26"], ["夏日户外券", "SUMMER80", "户外服饰", "0 张", "草稿", "周一 10:05"],
-    ]),
-  },
-  "inventory-warehouses": {
-    primaryLabel: "仓库名称", secondaryLabel: "仓库编码", categoryLabel: "可用 SKU", valueLabel: "今日出库", statusLabel: "仓库状态", actionLabel: "查看仓库", searchPlaceholder: "搜索仓库名称或编码", emptyTitle: "没有匹配仓库", rows: createRows("warehouse", [
-      ["华东一号仓", "WH-EAST-01", "2,840 个", "1,208 单", "运行中", "今天 10:36"], ["华南前置仓", "WH-SOUTH-02", "1,486 个", "862 单", "运行中", "今天 10:18"], ["西南中转仓", "WH-SOUTHWEST-01", "860 个", "312 单", "补货中", "今天 09:44"], ["北方备货仓", "WH-NORTH-01", "1,204 个", "496 单", "运行中", "昨天 19:10"],
-    ]),
-  },
-  "analytics-products": {
-    primaryLabel: "商品名称", secondaryLabel: "商品编码", categoryLabel: "成交件数", valueLabel: "成交金额", statusLabel: "趋势", actionLabel: "查看详情", searchPlaceholder: "搜索商品名称或编码", emptyTitle: "没有匹配商品分析", rows: createRows("product-analysis", [
-      ["曜石手冲壶 600ml", "BREW-KETTLE-600", "729 件", "¥ 232,551", "上升 18.2%", "今天 10:00"], ["深焙拼配挂耳咖啡", "COF-DRIP-020", "3,811 件", "¥ 365,856", "上升 11.6%", "今天 10:00"], ["云岚手冲咖啡礼盒", "COF-GIFT-001", "1,482 件", "¥ 395,658", "稳定", "今天 10:00"], ["轻量通勤包", "BAG-COMMUTE-002", "906 件", "¥ 246,432", "下降 4.8%", "今天 10:00"],
     ]),
   },
 };

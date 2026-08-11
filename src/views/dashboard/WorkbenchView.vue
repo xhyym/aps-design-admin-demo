@@ -32,7 +32,7 @@ const AUTO_REFRESH_INTERVAL_MS = 60_000;
 const nextRefreshAt = ref<number | null>(Date.now() + AUTO_REFRESH_INTERVAL_MS);
 const noticeDescription = computed(() => dashboardData.value
   ? `数据更新于 ${dashboardData.value.updatedAt}，指标会随着工作区数据同步更新。`
-  : "正在读取订单、会员、库存与活动数据。"
+  : "正在读取订单、商品与售后数据。"
 );
 const { remainingMilliseconds } = useCountdown(nextRefreshAt, () => {
   void refreshDashboard();
@@ -93,7 +93,7 @@ onMounted(() => { void refreshDashboard(); });
       </AppAlert>
     </header>
 
-    <AppCard v-if="isLoading" padding="none"><AppLoadingState title="正在汇总经营数据" description="正在读取订单、会员、库存与活动的最新状态。" /></AppCard>
+    <AppCard v-if="isLoading" padding="none"><AppLoadingState title="正在汇总经营数据" description="正在读取订单、商品与售后的最新状态。" /></AppCard>
     <AppCard v-else-if="errorMessage" padding="none"><AppStatePanel type="error" title="经营总览暂时无法加载" :description="errorMessage" action-text="重新加载" @action="loadDashboard" /></AppCard>
 
     <template v-else-if="dashboardData">
