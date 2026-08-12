@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "aps-design-admin-demo",
+  "compatibility_date": "2026-08-12",
+  // Admin Demo 是 Vue 单页应用，所有未知路径均回退到入口页面交由前端路由处理。
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
