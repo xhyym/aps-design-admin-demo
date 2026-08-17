@@ -2,6 +2,8 @@
 
 基于 Vue 3 和 `aps-design-pro` 搭建的电商运营中台示例。项目用完整的业务页面展示组件库在真实后台工作流中的组合方式，包括经营总览、商品、交易、售后、会员、营销、库存、数据分析、系统设置和组件实验室。
 
+官网与组件文档：[https://apsdesignpro.com/](https://apsdesignpro.com/)
+
 ## 页面截图
 
 ![APS Design Pro 后台工作台](./screenshots/admin-dashboard.png)
@@ -112,7 +114,7 @@ import "aps-design-pro/style.css";
 
 ## 相关链接
 
-- [官网与组件文档](https://gitee.com/xhyym/aps-design-website)
+- [官网与组件文档](https://apsdesignpro.com/)
 - [组件库源码](https://gitee.com/xhyym/aps-design-pro)
 - [npm：aps-design-pro](https://www.npmjs.com/package/aps-design-pro)
 

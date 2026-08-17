@@ -192,7 +192,7 @@ onMounted(() => { void refreshDashboard(); });
 .card-heading h2 {
   color: var(--aps-ink);
   font-size: var(--aps-text-base);
-  font-weight: 720;
+  font-weight: var(--aps-font-weight-heading);
 }
 
 .card-heading p {
@@ -206,7 +206,7 @@ onMounted(() => { void refreshDashboard(); });
 .todo-list a {
   color: var(--aps-blue);
   font-size: var(--aps-text-sm);
-  font-weight: 660;
+  font-weight: var(--aps-font-weight-strong);
   white-space: nowrap;
 }
 
@@ -257,7 +257,7 @@ onMounted(() => { void refreshDashboard(); });
 .todo-list strong {
   color: var(--aps-ink);
   font-size: var(--aps-text-sm);
-  font-weight: 700;
+  font-weight: var(--aps-font-weight-heading);
 }
 
 .todo-list p {

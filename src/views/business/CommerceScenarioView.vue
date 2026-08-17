@@ -136,5 +136,5 @@ function handleAction(row: CommerceScenarioRow): void { console.info(`[商城演
 </template>
 
 <style scoped>
-.scenario-primary { min-width: 0; }.scenario-primary strong, .scenario-primary small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.scenario-primary strong { color: var(--aps-ink); font-size: var(--aps-text-sm); font-weight: 680; }.scenario-primary small { margin-top: 3px; color: var(--aps-faint); font-size: var(--aps-text-xs); }.scenario-secondary { color: var(--aps-muted); font-family: var(--aps-font); font-size: var(--aps-text-sm); }
+.scenario-primary { min-width: 0; }.scenario-primary strong, .scenario-primary small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.scenario-primary strong { color: var(--aps-ink); font-size: var(--aps-text-sm); font-weight: var(--aps-font-weight-strong); }.scenario-primary small { margin-top: 3px; color: var(--aps-faint); font-size: var(--aps-text-xs); }.scenario-secondary { color: var(--aps-muted); font-family: var(--aps-font); font-size: var(--aps-text-sm); }
 </style>

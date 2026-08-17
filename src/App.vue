@@ -19,3 +19,13 @@ const { isLoading } = storeToRefs(networkStore);
     <AppToast :items="messages" @action="feedbackStore.triggerAction" @close="feedbackStore.close" />
   </AppConfigProvider>
 </template>
+
+<style>
+/* 演示项目在组件库新版本发布前先对齐同一套排版令牌，保证本地与线上展示一致。 */
+:root {
+  --aps-font: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+  --aps-font-weight-primary: 500;
+  --aps-font-weight-strong: 600;
+  --aps-font-weight-heading: 700;
+}
+</style>

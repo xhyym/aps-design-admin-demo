@@ -117,5 +117,5 @@ onMounted(loadMenus);
 </template>
 
 <style scoped>
-.menu-name { color: var(--aps-ink); font-size: var(--aps-text-base); font-weight: 680; }code { color: var(--aps-muted); font-family: var(--aps-font); font-size: var(--aps-text-sm); }.drawer-form { display: grid; gap: var(--aps-form-gap); }.menu-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.form-error { margin: -3px 0 0; color: var(--aps-red); font-size: var(--aps-text-sm); }@media (max-width: 680px) { .menu-form-grid { grid-template-columns: 1fr; } }
+.menu-name { color: var(--aps-ink); font-size: var(--aps-text-base); font-weight: var(--aps-font-weight-strong); }code { color: var(--aps-muted); font-family: var(--aps-font); font-size: var(--aps-text-sm); }.drawer-form { display: grid; gap: var(--aps-form-gap); }.menu-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.form-error { margin: -3px 0 0; color: var(--aps-red); font-size: var(--aps-text-sm); }@media (max-width: 680px) { .menu-form-grid { grid-template-columns: 1fr; } }
 </style>
